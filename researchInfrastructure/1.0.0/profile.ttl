@@ -1,0 +1,95 @@
+# CNR ISMAR Semantic Application Profile for Research Infrastructures 1.0.0
+# Profile and shape identifiers use the sapri namespace.
+# The existing descriptive properties are extended with an optional logo IRI.
+# Cardinalities, English text and fixed administrative values are profile rules,
+# not requirements imposed by LUPO, DCMI, FOAF or DCAT themselves.
+@prefix sapri: <https://w3id.org/cnr-ismar/sap/researchInfrastructure/1.0.0/> .
+@prefix rireg: <https://w3id.org/cnr-ismar/research-infrastructures-registry/> .
+@prefix prof: <http://www.w3.org/ns/dx/prof/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix lupo: <https://kos.lifewatch.eu/ontologies/LUPO#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+sapri: a prof:Profile ;
+    dcterms:title "CNR ISMAR Semantic Application Profile for Research Infrastructures"@en ;
+    dcterms:description "Application profile derived from the research infrastructure example, preserving document-level administrative metadata and direct infrastructure descriptions."@en ;
+    dcterms:identifier "cnr-ismar-sap-research-infrastructure-1.0.0" ;
+    dcat:version "1.0.0" ;
+    dcterms:issued "2026-10-31"^^xsd:date ;
+    dcterms:conformsTo <https://www.w3.org/TR/shacl/> ;
+    dcterms:hasPart sapri:ResearchInfrastructureShape, sapri:MetadataDocumentShape, sapri:ContactShape, sapri:PublisherShape .
+
+# Resource IRIs are formed by appending a unique local ID to the rireg namespace.
+# Additional types and properties remain allowed.
+sapri:ResearchInfrastructureShape a sh:NodeShape ;
+    dcterms:isPartOf sapri: ;
+    sh:name "Research infrastructure"@en ;
+    sh:targetClass lupo:ResearchInfrastructure ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/research-infrastructures-registry/[^/?#]+$" ;
+    sh:property [ sh:path rdf:type ; sh:name "Resource type"@en ; sh:order 1 ; sh:hasValue lupo:ResearchInfrastructure ] ;
+    sh:property [ sh:path dcterms:title ; sh:name "Name"@en ; sh:description "The name of the research infrastructure, in English."@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ] ;
+    sh:property [ sh:path dcterms:alternative ; sh:name "Alternative name / abbreviation"@en ; sh:description "Optional alternative names or abbreviations, in English; multiple values are allowed. DCMI does not restrict this property to acronyms."@en ; sh:order 3 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ] ;
+    sh:property [ sh:path foaf:homepage ; sh:name "Homepage"@en ; sh:description "The IRI of the infrastructure homepage."@en ; sh:order 4 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path dcterms:description ; sh:name "Description"@en ; sh:description "A description of the research infrastructure, in English, with at least 10 characters."@en ; sh:order 5 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 10 ] ;
+    sh:property [ sh:path foaf:depiction ; sh:name "Logo"@en ; sh:description "Optional HTTP or HTTPS IRI of the research infrastructure logo in PNG or JPEG format (.png, .jpg or .jpeg); PNG is preferred. Use a colour logo legible on a light background."@en ; sh:order 6 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:pattern "^https?://[^/?#\\s]+/[^?#\\s]*[.](png|jpe?g)([?][^#\\s]*)?(#[^\\s]*)?$" ; sh:flags "i" ] ;
+    # Graph-level presence check: a missing header must not pass validation silently.
+    # This checks the existing layout without adding a relationship to the data.
+    sh:sparql [ a sh:SPARQLConstraint ;
+        sh:message "A separate document IRI must carry the administrative metadata header in the same data graph."@en ;
+        sh:select """
+            PREFIX dcterms: <http://purl.org/dc/terms/>
+            SELECT $this WHERE {
+                FILTER NOT EXISTS {
+                    ?document dcterms:license ?license .
+                    FILTER (isIRI(?document) && ?document != $this)
+                }
+            }
+        """
+    ] .
+
+# Each data document has an explicit registry IRI, formed as the resource IRI plus .ttl.
+# Subjects-of targets allow the same shape to validate different document IRIs.
+# Targeting every administrative predicate also detects incomplete headers.
+sapri:MetadataDocumentShape a sh:NodeShape ;
+    dcterms:isPartOf sapri: ;
+    sh:name "Metadata document"@en ;
+    sh:targetSubjectsOf dcterms:conformsTo, dcterms:license, dcterms:creator, dcat:contactPoint, dcterms:publisher, dcterms:rights, dcterms:accessRights, dcat:version, dcterms:created, dcterms:modified ;
+    sh:nodeKind sh:IRI ;
+    sh:not [ sh:class lupo:ResearchInfrastructure ] ;
+    sh:property [ sh:path dcterms:conformsTo ; sh:name "Application profile"@en ; sh:description "The semantic application profile to which this metadata document conforms."@en ; sh:order 0 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue sapri: ] ;
+    sh:property [ sh:path dcat:version ; sh:name "Document version"@en ; sh:description "The version indicator of this metadata document; editable, with an initial value of 1.0.0."@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ;
+    sh:property [ sh:path dcterms:license ; sh:name "License"@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue <https://creativecommons.org/licenses/by/4.0/> ] ;
+    sh:property [ sh:path dcterms:creator ; sh:name "Creator"@en ; sh:order 3 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue <https://orcid.org/0009-0000-9657-919X> ] ;
+    sh:property [ sh:path dcat:contactPoint ; sh:name "Contact"@en ; sh:order 4 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:BlankNodeOrIRI ; sh:node sapri:ContactShape ] ;
+    sh:property [ sh:path dcterms:publisher ; sh:name "Publisher"@en ; sh:order 5 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:BlankNodeOrIRI ; sh:node sapri:PublisherShape ] ;
+    sh:property [ sh:path dcterms:rights ; sh:name "Rights"@en ; sh:order 6 ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue "The licence (dcterms:license) applies to this metadata record only."@en ] ;
+    sh:property [ sh:path dcterms:accessRights ; sh:name "Access rights"@en ; sh:order 7 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ] ;
+    # The date and time this research infrastructure instance document was created
+    sh:property [ sh:path dcterms:created ; sh:name "Document created"@en ; sh:description "The date and time this research infrastructure instance document was created, not the infrastructure creation date. Preserve this value across versions; enter the original date when importing a document without it."@en ; sh:order 8 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] ;
+    # The date and time this research infrastructure instance document was last modified
+    sh:property [ sh:path dcterms:modified ; sh:name "Last modified"@en ; sh:description "The date and time this research infrastructure instance document was last modified; updated automatically when form data changes."@en ; sh:order 9 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:dateTime ] .
+
+# These shapes constrain the contact and publisher nodes already in example.ttl.
+sapri:ContactShape a sh:NodeShape ;
+    dcterms:isPartOf sapri: ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property [ sh:path rdf:type ; sh:hasValue vcard:Individual ] ;
+    sh:property [ sh:path vcard:fn ; sh:name "Contact name"@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue "Federico Bellati" ] ;
+    sh:property [ sh:path vcard:hasEmail ; sh:name "Contact email"@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue <mailto:federico.bellati@cnr.it> ] .
+
+sapri:PublisherShape a sh:NodeShape ;
+    dcterms:isPartOf sapri: ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property [ sh:path rdf:type ; sh:hasValue prov:Agent ] ;
+    sh:property [ sh:path rdf:type ; sh:hasValue prov:Organization ] ;
+    sh:property [ sh:path rdf:type ; sh:hasValue foaf:Organization ] ;
+    sh:property [ sh:path foaf:name ; sh:name "Publisher name"@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ] ;
+    sh:property [ sh:path owl:sameAs ; sh:name "Publisher ROR"@en ; sh:order 2 ; sh:nodeKind sh:IRI ; sh:hasValue <https://ror.org/02hdf6119> ] .
