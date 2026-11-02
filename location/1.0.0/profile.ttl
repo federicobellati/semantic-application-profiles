@@ -1,0 +1,757 @@
+###############################################################################
+# CNR ISMAR - Location Application Profile 1.0.0
+# Active profile and SHACL constraints in a single Turtle document.
+###############################################################################
+# Location: https://w3id.org/cnr-ismar/locations-registry/{ID}
+# Document: the Location IRI followed by .ttl (local profile convention).
+# Geometry: https://w3id.org/cnr-ismar/locations-registry/{ID}.ttl#geometry-{UUID}
+# Geometry (abbreviated Turtle): locreg:{ID}.ttl\#geometry-{UUID}
+#
+# LocationShape validates the Feature identifiers, names, description, optional
+# keywords, country, geographic references, infrastructures, depiction, accuracy
+# and exactly one Geometry. Names are identical English rdfs:label/dcterms:title;
+# skos:prefLabel uses the existing '{ID} for future uses' convention with @und.
+# UUID v4 and compact notation constraints remain unchanged.
+# MetadataDocumentShape validates the separate document header: fixed license,
+# creator, contact, publisher, rights and access, plus document version, dates and profile conformance.
+# The document version is independent of the profile version. Dates concern the
+# document, not the physical location. The rights literal retains its trailing
+# space. A single authorized SPARQL presence check requires each Location header.
+# GeometryShape retains the UUID, reciprocal ownership and WKT constraints.
+# EPSG:4979 WKT order: longitude, latitude, ellipsoidal height, in POINT Z form.
+# ZZ is a local convention for international waters / beyond national jurisdiction;
+# the country-code shape checks two uppercase letters, not ISO list membership.
+# Cardinalities and fixed values are profile rules, not vocabulary requirements.
+# Previous separate profile/shape documents remain in .shacl/archived/.
+###############################################################################
+
+@prefix locreg:    <https://w3id.org/cnr-ismar/locations-registry/> .
+@prefix saploc:    <https://w3id.org/cnr-ismar/sap/location/1.0.0/> .
+@prefix locshape:  <https://w3id.org/cnr-ismar/sap/location/1.0.0/profile.ttl#> .
+@prefix prof:      <http://www.w3.org/ns/dx/prof/> .
+@prefix dcterms:   <http://purl.org/dc/terms/> .
+@prefix dcat:      <http://www.w3.org/ns/dcat#> .
+@prefix vcard:     <http://www.w3.org/2006/vcard/ns#> .
+@prefix orcid:     <https://orcid.org/> .
+@prefix prov:      <http://www.w3.org/ns/prov#> .
+@prefix foaf:      <http://xmlns.com/foaf/0.1/> .
+@prefix owl:       <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:       <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo:       <http://www.opengis.net/ont/geosparql#> .
+@prefix gn:        <https://www.geonames.org/ontology#> .
+@prefix rdfs:      <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:      <http://www.w3.org/2004/02/skos/core#> .
+@prefix sh:        <http://www.w3.org/ns/shacl#> .
+@prefix rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+###############################################################################
+# 2. PROFILE
+###############################################################################
+
+saploc:
+    a prof:Profile ;
+    dcterms:title "CNR ISMAR Semantic Application Profile for Locations"@en ;
+    dcterms:description "Application profile for describing locations as GeoSPARQL Features with associated WKT geometries and separate document-level administrative metadata."@en ;
+    dcterms:identifier "cnr-ismar-sap-location-1.0.0" ;
+    # Version indicator for this semantic profile
+    dcat:version "1.0.0" ;
+    dcterms:issued "2026-06-29"^^xsd:date ;
+    dcterms:publisher [
+        a prov:Agent, prov:Organization, foaf:Organization ;
+        foaf:name "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+        owl:sameAs <https://ror.org/02hdf6119>
+    ] ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator orcid:0009-0000-9657-919X ;
+    dcat:contactPoint [
+        a vcard:Individual ;
+        vcard:fn "Federico Bellati" ;
+        vcard:hasEmail <mailto:federico.bellati@cnr.it>
+    ] ;
+
+    dcterms:conformsTo <https://www.w3.org/TR/shacl/> ;
+    dcterms:conformsTo <https://www.ogc.org/standards/geosparql/> ;
+
+    dcterms:hasPart locshape:LocationShape, locshape:GeometryShape, locshape:MetadataDocumentShape .
+
+###############################################################################
+# 3. SHACL VALIDATION RULES
+###############################################################################
+
+###############################################################################
+# Location shape
+###############################################################################
+
+locshape:LocationShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saploc: ;
+
+    sh:name "Location"@en ;
+    sh:description """
+A location represented as a GeoSPARQL Feature.
+
+According to this application profile, a Location resource must be identified
+by an IRI following this pattern:
+
+https://w3id.org/cnr-ismar/locations-registry/{ID}
+
+The local identifier {ID} must start with a letter or number and may contain
+letters, numbers, hyphens or underscores.
+
+A location must provide a single human-readable name expressed both as
+rdfs:label and dcterms:title for cross-vocabulary interoperability. The two
+values must be identical, must use the English language tag @en, and must be
+at least three characters long.
+
+A location must provide exactly one English textual description using
+dcterms:description with language tag @en.
+
+A location may provide keywords or short phrases using dcterms:subject.
+Each keyword or phrase must be a non-empty English literal with tag @en.
+There is no maximum number of keywords.
+
+A preferred label must be generated from the local identifier according to
+the reference form convention:
+
+{ID} for future uses
+
+and must be provided as skos:prefLabel using the undefined language tag @und.
+
+A location must provide exactly one system-generated alternative identifier
+using skos:notation. This identifier is intended for systems requiring compact
+alphanumeric identifiers, such as SensorThings API / FROST Server
+implementations. It must be expressed as xsd:string, must contain at most
+35 characters, and may contain only letters, numbers and underscores.
+
+A location must provide exactly one system-generated UUID version 4 identifier
+using dcterms:identifier. The UUID must be expressed as xsd:string using the
+canonical UUID textual representation.
+
+A location must have exactly one associated GeoSPARQL Geometry.
+
+Administrative metadata belongs to a separate document resource whose IRI is
+the Location IRI followed by .ttl. MetadataDocumentShape validates its license,
+creator, contact, publisher, rights, access rights, document version and dates.
+The document and Location IRIs are distinct; the .ttl suffix is a local profile
+convention, not a requirement of the external vocabularies.
+
+A location must provide exactly one country code using gn:countryCode. The
+value must be an uppercase ISO 3166-1 alpha-2 code where applicable.
+
+The code AQ is used for Antarctica. For international waters or areas beyond
+national jurisdiction, this profile allows ZZ as a user-assigned ISO 3166-1
+alpha-2 code with a SAP-specific meaning.
+
+Where the country code alone is not semantically sufficient, especially in
+marine contexts such as exclusive economic zones, territorial seas, high seas,
+fishing zones or areas beyond national jurisdiction, the location should also
+provide a dcterms:spatial reference to an authoritative marine gazetteer
+resource.
+
+The geometry is expected to be encoded as a three-dimensional WKT geometry
+using EPSG:4979, where coordinates are expressed as longitude, latitude and
+ellipsoidal height. Longitude and latitude are expressed in decimal degrees
+and elevation is expressed in metres.
+"""@en ;
+
+    ###########################################################################
+    # Target
+    ###########################################################################
+
+    sh:targetClass geo:Feature ;
+
+    # Authorized presence check: each Feature needs its own document header.
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The Location must have a separate metadata document at its IRI followed by .ttl in the same data graph."@en ;
+        sh:select """
+            PREFIX dcterms: <http://purl.org/dc/terms/>
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS {
+                    BIND(IRI(CONCAT(STR($this), ".ttl")) AS ?document)
+                    ?document dcterms:license ?license .
+                }
+            }
+        """ ;
+    ] ;
+
+    ###########################################################################
+    # Location IRI
+    ###########################################################################
+
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id\\.org/cnr-ismar/locations-registry/[A-Za-z0-9][A-Za-z0-9_-]*$" ;
+    sh:message "The Location IRI must follow the pattern https://w3id.org/cnr-ismar/locations-registry/{ID}, where ID starts with a letter or number and contains only letters, numbers, hyphens or underscores."@en ;
+
+    ###########################################################################
+    # rdf:type geo:Feature
+    ###########################################################################
+
+    sh:property [
+        sh:path rdf:type ;
+        sh:name "Resource type"@en ;
+        sh:description "The resource must be explicitly typed as a GeoSPARQL Feature."@en ;
+        sh:order 1 ;
+        sh:hasValue geo:Feature ;
+        sh:message "A location must be explicitly typed as geo:Feature."@en ;
+    ] ;
+
+    ###########################################################################
+    # skos:notation
+    ###########################################################################
+
+    sh:property [
+        sh:path skos:notation ;
+        sh:name "Alternative system identifier"@en ;
+        sh:description "Mandatory system-generated alternative identifier intended for systems requiring compact alphanumeric identifiers, such as SensorThings API / FROST Server implementations. The value must be expressed as xsd:string, must contain at most 35 characters, and may contain only letters, numbers and underscores."@en ;
+        sh:order 2 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:minLength 1 ;
+        sh:maxLength 35 ;
+        sh:pattern "^[A-Za-z0-9_]{1,35}$" ;
+        sh:message "A location must have exactly one skos:notation value expressed as xsd:string. The value must contain at most 35 characters and may contain only letters, numbers and underscores."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:identifier
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:identifier ;
+        sh:name "UUID v4 identifier"@en ;
+        sh:description "Mandatory system-generated UUID version 4 identifier for the location. The value must be expressed as xsd:string using the canonical UUID textual representation."@en ;
+        sh:order 3 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" ;
+        sh:message "A location must have exactly one dcterms:identifier value containing a valid UUID version 4 expressed as xsd:string."@en ;
+    ] ;
+
+    ###########################################################################
+    # rdfs:label
+    ###########################################################################
+
+    sh:property [
+        sh:path rdfs:label ;
+        sh:name "Name"@en ;
+        sh:description "Human-readable feature name. It is emitted by the reference form as rdfs:label with language tag @en. The value must be identical to dcterms:title and must contain at least three characters."@en ;
+        sh:order 4 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:minLength 3 ;
+        sh:equals dcterms:title ;
+        sh:message "A location must have exactly one rdfs:label using @en, at least three characters long, and identical to dcterms:title."@en ;
+    ] ;
+
+    ###########################################################################
+    # skos:prefLabel
+    ###########################################################################
+
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:name "Preferred name"@en ;
+        sh:description "Preferred label generated by the reference form from the local identifier. The generated value follows the convention '{ID} for future uses'. It must be provided as a single language-tagged literal using the @und language tag."@en ;
+        sh:order 5 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "und" ) ;
+        sh:minLength 3 ;
+        sh:pattern "^[A-Za-z0-9][A-Za-z0-9_-]* for future uses$" ;
+        sh:message "A location must have exactly one skos:prefLabel using @und and following the pattern '{ID} for future uses'."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:title
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:title ;
+        sh:name "Title"@en ;
+        sh:description "Human-readable feature title. It is emitted by the reference form as dcterms:title with language tag @en. The value must be identical to rdfs:label and must contain at least three characters."@en ;
+        sh:order 6 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:minLength 3 ;
+        sh:equals rdfs:label ;
+        sh:message "A location must have exactly one dcterms:title using @en, at least three characters long, and identical to rdfs:label."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:description
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:description ;
+        sh:name "Description"@en ;
+        sh:description "Textual description of the location. It is emitted by the reference form as dcterms:description with language tag @en and must contain at least three characters."@en ;
+        sh:order 7 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:minLength 3 ;
+        sh:message "A location must have exactly one dcterms:description using @en and containing at least three characters."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:subject
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:subject ;
+        sh:name "Notes / keywords"@en ;
+        sh:description "Optional keywords or short phrases characterising the location. Each value must be a non-empty English literal using @en. The reference form accepts one keyword or phrase per line and emits a separate value for each. There is no maximum number of values."@en ;
+        sh:order 8 ;
+        sh:minCount 0 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:minLength 1 ;
+        sh:pattern "\\S" ;
+        sh:message "Location keywords, when present, must be non-empty English literals using @en."@en ;
+    ] ;
+
+    ###########################################################################
+    # gn:countryCode
+    ###########################################################################
+
+    sh:property [
+        sh:path gn:countryCode ;
+        sh:name "Country code"@en ;
+        sh:description """
+Mandatory country code associated with the declared coordinates.
+
+The property used is gn:countryCode from the GeoNames Ontology. Its value is
+a two-letter country code from the ISO 3166 list.
+
+Officially assigned ISO 3166-1 alpha-2 codes must be used where applicable,
+for example IT for Italy, DE for Germany, GB for the United Kingdom, and AQ
+for Antarctica.
+
+For locations in international waters or areas beyond national jurisdiction,
+this application profile allows the ISO 3166-1 alpha-2 user-assigned code ZZ
+with the SAP-specific meaning "international waters / areas beyond national
+jurisdiction".
+
+The value ZZ is therefore a CNR ISMAR SAP convention based on the ISO 3166-1
+user-assigned code space, and must not be interpreted as an officially
+assigned ISO country code.
+"""@en ;
+        sh:order 9 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:minLength 2 ;
+        sh:maxLength 2 ;
+        sh:pattern "^[A-Z]{2}$" ;
+        sh:message "A location must have exactly one gn:countryCode value expressed as an uppercase two-letter ISO 3166-1 alpha-2 code where applicable. Use ZZ, as a SAP-specific user-assigned convention, for international waters or areas beyond national jurisdiction."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:spatial
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:spatial ;
+        sh:name "Spatial coverage or marine region"@en ;
+        sh:description """
+Optional reference to a spatial coverage, country, territory, marine region,
+exclusive economic zone, territorial sea, high seas area, fishing zone or
+other authoritative geographical entity.
+
+For marine and transitional water observations, values should preferably be
+IRIs from authoritative gazetteers or controlled vocabularies, such as Marine
+Regions MRGID resources, EU Publications Office authority concepts, GeoNames
+features or other persistent geospatial identifiers.
+
+Browse Marine Regions at https://marineregions.org/gazetteer.php?p=browser,
+open the desired region and copy its MRGID IRI into this field.
+
+This property complements gn:countryCode. The country code provides a compact
+ISO 3166-1 alpha-2 value, while dcterms:spatial can identify the actual
+geographical or maritime region with greater semantic precision.
+"""@en ;
+        sh:order 10 ;
+        sh:minCount 0 ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Spatial coverage or marine region references, when present, must be IRIs."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:isPartOf
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:isPartOf ;
+        sh:name "Part of"@en ;
+        sh:description "Optional reference to a research infrastructure. The value must be an IRI. The reference form accepts local research infrastructure identifiers and emits them as IRIs, but this profile intentionally allows external infrastructure IRIs because the final URI pattern is not yet fixed."@en ;
+        sh:order 11 ;
+        sh:minCount 0 ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Research infrastructure references, when present, must be IRIs."@en ;
+    ] ;
+
+    ###########################################################################
+    # foaf:depiction
+    ###########################################################################
+
+    sh:property [
+        sh:path foaf:depiction ;
+        sh:name "Depiction"@en ;
+        sh:description "Optional HTTP or HTTPS URI of an image depicting the location, for example https://example.org/image.jpg."@en ;
+        sh:order 12 ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:pattern "^https?://[^\\s<>\"']+$" ;
+        sh:flags "i" ;
+        sh:message "foaf:depiction must be an HTTP or HTTPS URI of an image, without spaces, angle brackets or quotes."@en ;
+    ] ;
+
+    ###########################################################################
+    # geo:hasMetricSpatialAccuracy
+    ###########################################################################
+
+    sh:property [
+        sh:path geo:hasMetricSpatialAccuracy ;
+        sh:name "Vertical accuracy"@en ;
+        sh:description "In this profile, this mandatory field records only the vertical accuracy of the ellipsoidal height (the Z coordinate in POINT Z), not the accuracy of longitude or latitude. Express the value in metres as a non-negative number. The reference form emits this value as xsd:double."@en ;
+        sh:order 13 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:or (
+            [ sh:datatype xsd:integer ]
+            [ sh:datatype xsd:decimal ]
+            [ sh:datatype xsd:double ]
+        ) ;
+        sh:minInclusive 0 ;
+        sh:message "Vertical accuracy is mandatory and must be a non-negative numeric value expressed in metres, referring only to the ellipsoidal height."@en ;
+    ] ;
+
+    ###########################################################################
+    # geo:hasGeometry
+    ###########################################################################
+
+    sh:property [
+        sh:path geo:hasGeometry ;
+        sh:name "Geometry"@en ;
+        sh:description "The single GeoSPARQL geometry associated with the location. The geometry must be an IRI, must be explicitly typed as geo:Geometry, and must conform to GeometryShape."@en ;
+        sh:order 14 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:class geo:Geometry ;
+        sh:node locshape:GeometryShape ;
+        sh:message "A location must have exactly one geo:hasGeometry value. The geometry must be an IRI, must be typed as geo:Geometry and must conform to GeometryShape."@en ;
+    ] .
+
+
+###############################################################################
+# Metadata document shape
+###############################################################################
+
+locshape:MetadataDocumentShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saploc: ;
+    sh:name "Metadata document"@en ;
+    sh:description "Administrative metadata about the Turtle document describing one Location, including conformance to this application profile. The document IRI is the Location IRI followed by .ttl. The document has no additional explicit RDF class or document-to-Location predicate, following the RI profile pattern."@en ;
+    sh:targetSubjectsOf dcterms:license, dcterms:creator, dcat:contactPoint, dcterms:publisher, dcterms:rights, dcterms:accessRights, dcat:version, dcterms:created, dcterms:modified ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/locations-registry/[A-Za-z0-9][A-Za-z0-9_-]*[.]ttl$" ;
+    sh:not [ sh:class geo:Feature ] ;
+    sh:message "Administrative metadata must belong to a separate document IRI following https://w3id.org/cnr-ismar/locations-registry/{ID}.ttl, not to the Location or Geometry."@en ;
+
+    ###########################################################################
+    # dcterms:license
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:license ;
+        sh:name "License"@en ;
+        sh:description "Mandatory license: exactly the Creative Commons Attribution 4.0 International (CC BY 4.0) IRI."@en ;
+        sh:order 1 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <https://creativecommons.org/licenses/by/4.0/> ;
+        sh:message "A metadata document must have exactly one dcterms:license: <https://creativecommons.org/licenses/by/4.0/>."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:creator and dcat:contactPoint - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:creator ;
+        sh:name "Creator"@en ;
+        sh:description "Mandatory fixed creator: Federico Bellati, identified by the ORCID IRI."@en ;
+        sh:order 2 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue orcid:0009-0000-9657-919X ;
+        sh:message "A metadata document must have exactly one dcterms:creator: <https://orcid.org/0009-0000-9657-919X>."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcat:contactPoint ;
+        sh:name "Contact point"@en ;
+        sh:description "Mandatory fixed contact, described as vcard:Individual with the exact name Federico Bellati and email IRI mailto:federico.bellati@cnr.it."@en ;
+        sh:order 3 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue vcard:Individual ;
+                sh:message "The contact point must be explicitly typed as vcard:Individual."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:fn ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Federico Bellati" ;
+                sh:message "The contact point must have exactly one untagged vcard:fn: Federico Bellati."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:hasEmail ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <mailto:federico.bellati@cnr.it> ;
+                sh:message "The contact point must have exactly one vcard:hasEmail: <mailto:federico.bellati@cnr.it>."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one contact point with the required type, name and email."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:publisher - required organization description
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:publisher ;
+        sh:name "Publisher"@en ;
+        sh:description "Mandatory CNR ISMAR publisher, identified by a blank node or IRI and described with the required explicit types, exact name and ROR link."@en ;
+        sh:order 4 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Agent ;
+                sh:message "The publisher must be explicitly typed as prov:Agent."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Organization ;
+                sh:message "The publisher must be explicitly typed as prov:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue foaf:Organization ;
+                sh:message "The publisher must be explicitly typed as foaf:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path foaf:name ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+                sh:message "The publisher must have exactly the untagged foaf:name 'Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche'."@en ;
+            ] ;
+            sh:property [
+                sh:path owl:sameAs ;
+                sh:minCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <https://ror.org/02hdf6119> ;
+                sh:message "The publisher must include owl:sameAs <https://ror.org/02hdf6119>; all owl:sameAs values must be IRIs."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one publisher described as the CNR ISMAR organization, with all required types, name and ROR link."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:rights and dcterms:accessRights - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:rights ;
+        sh:name "Rights"@en ;
+        sh:description "Mandatory fixed English rights statement clarifying that the license applies only to this metadata record. The trailing space is part of the required literal."@en ;
+        sh:order 5 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:hasValue "The licence (dcterms:license) applies to this metadata record only; "@en ;
+        sh:message "A metadata document must have exactly one dcterms:rights: the fixed English metadata-only license statement, including its trailing space."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:accessRights ;
+        sh:name "Access rights"@en ;
+        sh:description "Mandatory public access: exactly the PUBLIC IRI from the EU Access right authority table."@en ;
+        sh:order 6 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
+        sh:message "A metadata document must have exactly one dcterms:accessRights: <http://publications.europa.eu/resource/authority/access-right/PUBLIC>."@en ;
+    ] ;
+
+    sh:property [ sh:path dcat:version ; sh:name "Document version"@en ; sh:description "The editable version of this metadata document, independent of the semantic application profile version. The form starts at 1.0.0."@en ; sh:order 7 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ; sh:pattern "\\S" ] ;
+
+    # Dates of the location instance document, recorded on the separate document resource.
+    sh:property [
+        sh:path dcterms:created ;
+        sh:name "Location instance document creation date"@en ;
+        sh:description "The date and time the location instance document was created. This is metadata about the instance document, not the semantic application profile or the physical location."@en ;
+        sh:order 8 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The location instance document must have exactly one dcterms:created value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:modified ;
+        sh:name "Location instance document modification date"@en ;
+        sh:description "The date and time the location instance document was last modified. This is metadata about the instance document, not the semantic application profile or the physical location."@en ;
+        sh:order 9 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The location instance document must have exactly one dcterms:modified value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [ sh:path dcterms:conformsTo ; sh:name "Application profile conformance"@en ; sh:description "The metadata document conforms to the versioned application profile identified by saploc:, distinct from the Turtle file referenced by rdfs:seeAlso."@en ; sh:order 10 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue saploc: ; sh:message "A metadata document must have exactly one dcterms:conformsTo pointing to <https://w3id.org/cnr-ismar/sap/location/1.0.0/>."@en ] .
+
+###############################################################################
+# Geometry shape
+###############################################################################
+
+locshape:GeometryShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saploc: ;
+
+    sh:name "Geometry"@en ;
+    sh:description """
+A GeoSPARQL geometry encoded as a three-dimensional WKT literal.
+
+The geometry must have its own UUID version 4, distinct from its Feature's
+identifier, expressed as dcterms:identifier and used in its IRI:
+https://w3id.org/cnr-ismar/locations-registry/{ID}.ttl#geometry-{UUID}
+In abbreviated Turtle, use the locreg: prefix and escape # with a backslash.
+Blank nodes are not allowed. Exactly one dcterms:isPartOf must identify the
+owning geo:Feature, which must link back to this geometry with geo:hasGeometry.
+Both links must be explicit in the data; no inference is required.
+
+The geometry must use CRS EPSG:4979 and must be encoded as:
+
+POINT Z(longitude latitude elevation)
+
+Longitude is the east coordinate and is written before latitude.
+Longitude and latitude are expressed in decimal degrees.
+Elevation is expressed as WGS84 ellipsoidal height in metres and may be
+positive or negative.
+
+The reference form generates the geometry as a geo:wktLiteral using:
+
+<http://www.opengis.net/def/crs/EPSG/0/4979> POINT Z(lon lat elevation)
+"""@en ;
+
+    sh:targetClass geo:Geometry ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id\\.org/cnr-ismar/locations-registry/[A-Za-z0-9][A-Za-z0-9_-]*[.]ttl#geometry-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" ;
+    sh:message "A geometry must have an IRI following https://w3id.org/cnr-ismar/locations-registry/{ID}.ttl#geometry-{UUID}, using the owning Location's ID and its own UUID version 4."@en ;
+
+    sh:property [
+        sh:path dcterms:identifier ;
+        sh:name "Geometry UUID v4 identifier"@en ;
+        sh:description "The geometry's own UUID v4, also used as the final component of its IRI."@en ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" ;
+        sh:message "A geometry must have exactly one dcterms:identifier containing its own UUID version 4 as xsd:string."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:isPartOf ;
+        sh:name "Owning Feature"@en ;
+        sh:description "The single Feature represented by this geometry; it must explicitly link back using geo:hasGeometry."@en ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:class geo:Feature ;
+        sh:message "A geometry must have exactly one dcterms:isPartOf IRI identifying its owning geo:Feature."@en ;
+    ] ;
+
+    sh:property [
+        sh:path [ sh:inversePath geo:hasGeometry ] ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:equals dcterms:isPartOf ;
+        sh:message "The Feature linking to a geometry with geo:hasGeometry must be exactly the Feature identified by its dcterms:isPartOf."@en ;
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The geometry IRI must be the owning Feature's IRI followed by .ttl#geometry- and its dcterms:identifier UUID, which must differ from the Feature's UUID."@en ;
+        sh:select """
+            PREFIX dcterms: <http://purl.org/dc/terms/>
+            PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+            SELECT $this
+            WHERE {
+                $this dcterms:identifier ?uuid ; dcterms:isPartOf ?owner .
+                FILTER (
+                    STR($this) != CONCAT(STR(?owner), ".ttl#geometry-", STR(?uuid))
+                    || EXISTS {
+                        ?feature geo:hasGeometry $this ; dcterms:identifier ?featureUUID .
+                        FILTER (LCASE(STR(?featureUUID)) = LCASE(STR(?uuid)))
+                    }
+                )
+            }
+        """ ;
+    ] ;
+
+    ###########################################################################
+    # rdf:type geo:Geometry
+    ###########################################################################
+
+    sh:property [
+        sh:path rdf:type ;
+        sh:hasValue geo:Geometry ;
+        sh:name "Geometry type"@en ;
+        sh:description "The geometry resource must be explicitly typed as geo:Geometry."@en ;
+        sh:message "The geometry must be explicitly typed as geo:Geometry."@en ;
+    ] ;
+
+###########################################################################
+    # geo:asWKT
+    ###########################################################################
+
+    sh:property [
+        sh:path geo:asWKT ;
+        sh:name "WKT geometry"@en ;
+        sh:description "Three-dimensional WKT literal encoded using EPSG:4979. The WKT must be written as POINT Z(longitude latitude elevation), where longitude and latitude are decimal degrees and elevation is WGS84 ellipsoidal height in metres. Longitude must be between -180 and 180 degrees; latitude must be between -90 and 90 degrees."@en ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype geo:wktLiteral ;
+        sh:pattern "^<http://www\\.opengis\\.net/def/crs/EPSG/0/4979>\\s+POINT\\s+Z\\s*\\(\\s*[-+]?(?:(?:1[0-7][0-9]|[1-9]?[0-9])(?:\\.[0-9]+)?|180(?:\\.0+)?)\\s+[-+]?(?:(?:[1-8]?[0-9])(?:\\.[0-9]+)?|90(?:\\.0+)?)\\s+[-+]?[0-9]+(?:\\.[0-9]+)?\\s*\\)$" ;
+        sh:message "The WKT geometry must use EPSG:4979 and be encoded as POINT Z(longitude latitude elevation), with longitude between -180 and 180 degrees and latitude between -90 and 90 degrees."@en ;
+    ] .
