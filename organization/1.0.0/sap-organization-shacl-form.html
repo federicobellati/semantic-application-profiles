@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SAP Organization SHACL Single Page Form</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --brand: #075985;
+      --brand2: #0891b2;
+      --ok: #047857;
+      --ok-bg: #ecfdf5;
+      --warn: #92400e;
+      --warn-bg: #fffbeb;
+      --err: #b91c1c;
+      --err-bg: #fef2f2;
+      --code: #0f172a;
+      --code-bg: #eef2f7;
+      --focus: #22d3ee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 28px 18px 48px; overflow-wrap: anywhere; }
+    .hero {
+      border-radius: 28px;
+      padding: 28px;
+      color: white;
+      background: linear-gradient(135deg, #0f172a 0%, #164e63 55%, #155e75 100%);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.035em; }
+    h2 { margin: 0; font-size: 22px; }
+    h3 { margin: 0 0 10px; font-size: 16px; }
+    p { line-height: 1.55; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 750; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); }
+    .badge.primary { background: #67e8f9; color: #083344; border-color: transparent; }
+    .statusGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 150px)); gap: 10px; }
+    .statusBox { border-radius: 18px; padding: 14px; background: rgba(255,255,255,.12); }
+    .statusBox span { display: block; color: #cbd5e1; font-size: 12px; }
+    .statusBox strong { display: block; margin-top: 3px; }
+    .card { margin-top: 20px; border-radius: 24px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(15, 23, 42, .045); }
+    .cardContent { padding: 20px; }
+    .grid { display: grid; gap: 16px; }
+    .grid > *, .hero > *, .inline > *, .btnRow > * { min-width: 0; }
+    .shapeGrid { grid-template-columns: minmax(0, 1fr) 200px 180px; align-items: start; }
+    .mainGrid { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: start; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .field { display: grid; gap: 6px; align-content: start; }
+    .fieldNotes { display: grid; gap: 6px; }
+    /* Shared rows keep labels, controls and notes aligned independently of text length. */
+    @supports (grid-template-rows: subgrid) {
+      .two > .field, .three > .field, .shapeGrid > .field {
+        grid-row: span 3;
+        grid-template-rows: subgrid;
+        align-items: start;
+      }
+      .shapeGrid > button { grid-column: 3; grid-row: 2; }
+    }
+    label { font-weight: 720; font-size: 14px; }
+    input, textarea, select {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 13px;
+      padding: 11px 12px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+      outline: none;
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    input:focus, textarea:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(34, 211, 238, .22); }
+    input[readonly] { background: #f1f5f9; }
+    .help { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .wktBox { border-radius: 16px; background: var(--code-bg); color: var(--code); padding: 12px; font-size: 12px; overflow-x: auto; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; background: #e2e8f0; padding: 5px; border-radius: 18px; width: fit-content; max-width: 100%; }
+    .tabBtn { border: 0; background: transparent; border-radius: 14px; padding: 10px 18px; cursor: pointer; font-weight: 750; color: #334155; }
+    .tabBtn.active { background: white; color: #0f172a; box-shadow: 0 1px 4px rgba(15, 23, 42, .12); }
+    .btnRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, .fileBtn {
+      border: 0;
+      border-radius: 15px;
+      padding: 11px 15px;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+      background: var(--brand);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button.secondary, .fileBtn { background: white; color: #0f172a; border: 1px solid #cbd5e1; }
+    button.ghost { background: #e0f2fe; color: #075985; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .fileBtn input { display: none; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .alert { border-radius: 18px; padding: 15px; border: 1px solid; }
+    .alert.ok { color: var(--ok); background: var(--ok-bg); border-color: #a7f3d0; }
+    .alert.warn { color: var(--warn); background: var(--warn-bg); border-color: #fde68a; }
+    .alert.err { color: var(--err); background: var(--err-bg); border-color: #fecaca; }
+    ul { margin: 8px 0 0; padding-left: 22px; }
+    li { margin: 5px 0; }
+    .turtleArea { min-height: 560px; white-space: pre; overflow: auto; font-size: 12px; line-height: 1.45; }
+    .smallStatus { color: var(--muted); margin-top: 10px; font-size: 13px; }
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .grow { flex: 1 1 0; }
+    #regenBtn { flex-shrink: 0; }
+    .sectionNote { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+    .sourceBox { border-radius: 18px; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 14px; }
+    .fixedMetadata label { color: #5b6470; }
+    .fixedMetadata input[readonly], .fixedMetadata textarea[readonly] {
+      background: #f1f3f5; color: #5b6470; border-color: #d1d5db;
+    }
+    .fixedMetadata textarea { min-height: 110px; }
+    @media (max-width: 1100px) { .mainGrid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 900px) {
+      .hero, .shapeGrid, .two, .three { grid-template-columns: minmax(0, 1fr); }
+      .two > .field, .three > .field, .shapeGrid > .field { grid-row: auto; grid-template-rows: none; }
+      .shapeGrid > button { grid-column: auto; grid-row: auto; }
+      .statusGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tabs { width: 100%; }
+      .tabBtn { flex: 1; }
+    }
+    @media (max-width: 900px) { .tabBtn { padding: 10px; white-space: nowrap; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="badges"><span class="badge primary">SAP Organization</span><span class="badge">SHACL-driven helper</span><span class="badge">ORG · DCMI · FOAF</span></div>
+        <h1>Single-page form per organizzazioni RDF</h1>
+        <p>Compila, importa e genera Turtle secondo il profilo dell’organizzazione. Licenza, autore, contatto, editore, diritti e accesso sono precompilati e riferiti al documento.</p>
+      </div>
+      <div class="statusGrid"><div class="statusBox"><span>Versione</span><strong id="heroVersion">1.0.0</strong></div><div class="statusBox"><span>Stato</span><strong id="heroState">da compilare</strong></div></div>
+    </section>
+    <section class="card"><div class="cardContent">
+      <h2>Profilo SHACL di riferimento</h2>
+      <p class="sectionNote"><a href="https://w3id.org/cnr-ismar/sap/organization/1.0.0/profile.ttl">profile.ttl</a> · <code>saporg:</code> https://w3id.org/cnr-ismar/sap/organization/1.0.0/ · File pubblico previsto: <code>https://w3id.org/cnr-ismar/sap/organization/1.0.0/profile.ttl</code> · Regole integrate nella pagina; la libreria N3 viene caricata dalla CDN come negli altri form.</p>
+      <p id="shapeStatus" class="smallStatus" role="status">Caricamento del profilo…</p>
+    </div></section>
+    <div class="tabs" role="tablist" aria-label="Sezioni del form">
+      <button id="tab-form" class="tabBtn active" data-tab="form" type="button" role="tab" aria-controls="panel-form" aria-selected="true">Form</button>
+      <button id="tab-validate" class="tabBtn" data-tab="validate" type="button" role="tab" aria-controls="panel-validate" aria-selected="false" tabindex="-1">Validazione</button>
+      <button id="tab-turtle" class="tabBtn" data-tab="turtle" type="button" role="tab" aria-controls="panel-turtle" aria-selected="false" tabindex="-1">Turtle</button>
+    </div>
+    <section id="panel-form" class="panel active" role="tabpanel" aria-labelledby="tab-form">
+      <div class="grid mainGrid">
+        <section class="card"><div class="cardContent grid">
+          <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><div><h2>Dati principali</h2><p class="sectionNote">Descrizione dell’organizzazione <code>org:Organization</code>.</p></div><label id="uploadLabel" class="fileBtn" role="button" tabindex="0">⇧ Carica Turtle locale<input id="ttlUpload" type="file" accept=".ttl,.txt,text/turtle" /></label></div>
+          <p id="importStatus" class="smallStatus" role="status">Carica un file Turtle da modificare o controllare, oppure compila una nuova descrizione.</p>
+          <div class="field"><label for="resourceID">ID *</label><input id="resourceID" placeholder="ismar" autocomplete="off" aria-describedby="resourceID-help" required /><p class="help" id="resourceID-help">Inserisci solo l’ID locale, per esempio ismar. Il prefisso fisso https://w3id.org/cnr-ismar/organizations-registry/ viene aggiunto automaticamente per comporre l’IRI dell’organizzazione.</p></div>
+          <p class="help">Indirizzo dell’organizzazione: <code id="resourceAddress"></code></p>
+          <div id="resourceFields" class="grid"></div>
+          <p class="help">* Campi obbligatori. Inserisci i testi in inglese: saranno esportati con <code>@en</code>.</p>
+        </div></section>
+        <section class="card fixedMetadata"><div class="cardContent grid"><div><h2>Licenza, autore, contatto e diritti</h2><p class="sectionNote">Questi valori descrivono il documento Turtle che contiene la descrizione dell’organizzazione. Il suo indirizzo è l’IRI dell’organizzazione seguito da <code>.ttl</code>.</p><p class="help">Indirizzo del documento: <code id="documentAddress"></code></p></div><div id="metadataFields" class="grid"></div></div></section>
+      </div>
+    </section>
+    <section id="panel-validate" class="panel" role="tabpanel" aria-labelledby="tab-validate" hidden><div class="card"><div class="cardContent grid">
+      <h2>Controlli del modulo</h2>
+      <p class="sectionNote">I controlli leggono le shape integrate: obbligatorietà, cardinalità, IRI, valori fissi, tipi, lingua e lunghezza minima. La presenza dell’intestazione amministrativa è controllata anche nel modulo. Per un rapporto SHACL completo usa un validatore SHACL con il file del profilo, che include un vincolo SPARQL.</p>
+      <p class="sectionNote">Il primo risultato riguarda il Turtle generato dai dati attuali. Il report «File originale» riguarda il file caricato prima delle modifiche e dell’applicazione dei valori fissi.</p>
+      <div id="validationResult" aria-live="polite"></div>
+      <div id="importValidationResult" aria-live="polite" hidden></div>
+    </div></div></section>
+    <section id="panel-turtle" class="panel" role="tabpanel" aria-labelledby="tab-turtle" hidden><div class="card"><div class="cardContent grid">
+      <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><h2>Turtle generato</h2><div class="btnRow"><button id="copyBtn" type="button" class="secondary" disabled>Copia Turtle</button><button id="downloadBtn" type="button" disabled>Scarica .ttl</button></div></div>
+      <label for="turtleOutput" class="help">Anteprima del documento RDF; copia e download sono abilitati dopo il superamento dei controlli.</label>
+      <textarea id="turtleOutput" class="turtleArea mono" readonly spellcheck="false"></textarea><p id="exportStatus" class="smallStatus" role="status"></p>
+    </div></div></section>
+    <noscript><p class="alert err">Attiva JavaScript per compilare il modulo.</p></noscript>
+  </main>
+<script src="https://cdn.jsdelivr.net/npm/n3@1.26.0/browser/n3.min.js"></script>
+<script id="embedded-profile" type="text/turtle">
+###############################################################################
+# CNR ISMAR - Organization Application Profile 1.0.0
+# The form combines a local ID with the fixed entity namespace; no duplicate identifier is required.
+# Entity namespace confirmed by the profile owner: organizations-registry.
+# Administrative metadata describes the separate entity-IRI + .ttl document.
+# Cardinalities, HTTPS logo URLs and fixed metadata are local profile rules.
+# All selected vocabulary terms are officially defined; no local data properties.
+###############################################################################
+
+@prefix orgreg:    <https://w3id.org/cnr-ismar/organizations-registry/> .
+@prefix saporg:    <https://w3id.org/cnr-ismar/sap/organization/1.0.0/> .
+@prefix orgshape:  <https://w3id.org/cnr-ismar/sap/organization/1.0.0/profile.ttl#> .
+@prefix org:       <http://www.w3.org/ns/org#> .
+@prefix prof:      <http://www.w3.org/ns/dx/prof/> .
+@prefix sh:        <http://www.w3.org/ns/shacl#> .
+@prefix rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:      <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms:   <http://purl.org/dc/terms/> .
+@prefix dcat:      <http://www.w3.org/ns/dcat#> .
+@prefix vcard:     <http://www.w3.org/2006/vcard/ns#> .
+@prefix orcid:     <https://orcid.org/> .
+@prefix prov:      <http://www.w3.org/ns/prov#> .
+@prefix foaf:      <http://xmlns.com/foaf/0.1/> .
+@prefix owl:       <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:       <http://www.w3.org/2001/XMLSchema#> .
+
+# Profile document metadata
+saporg:
+    a prof:Profile ;
+    dcterms:title "CNR ISMAR Semantic Application Profile for Organizations"@en ;
+    dcterms:description "Minimal application profile for describing organizations with separate document-level administrative metadata."@en ;
+    dcterms:identifier "cnr-ismar-sap-organization-1.0.0" ;
+    # Version indicator for this semantic profile
+    dcat:version "1.0.0" ;
+    dcterms:issued "2026-11-12"^^xsd:date ;
+    dcterms:publisher [
+        a prov:Agent, prov:Organization, foaf:Organization ;
+        foaf:name "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+        owl:sameAs <https://ror.org/02hdf6119>
+    ] ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator orcid:0009-0000-9657-919X ;
+    dcat:contactPoint [
+        a vcard:Individual ;
+        vcard:fn "Federico Bellati" ;
+        vcard:hasEmail <mailto:federico.bellati@cnr.it>
+    ] ;
+
+    dcterms:conformsTo <https://www.w3.org/TR/shacl/> ;
+
+    dcterms:hasPart orgshape:OrganizationShape, orgshape:MetadataDocumentShape .
+
+###############################################################################
+# Organization-specific validation rules
+###############################################################################
+
+orgshape:OrganizationShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saporg: ;
+    sh:name "Organization"@en ;
+    sh:description "An organization identified by its registry IRI, with one short name and one description in English. ROR identity, logo and homepage are optional single values. The form constructs the entity IRI from the fixed namespace and a local ID; no identifier property is repeated. The metadata document has the entity IRI followed by .ttl. Additional types and properties are allowed."@en ;
+    sh:targetClass org:Organization ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/organizations-registry/[A-Za-z0-9][A-Za-z0-9_-]*$" ;
+    sh:message "The organization IRI must be https://w3id.org/cnr-ismar/organizations-registry/{ID}; ID starts with a letter or number and contains only letters, numbers, hyphens or underscores."@en ;
+    sh:property [ sh:path rdf:type ; sh:name "Resource type"@en ; sh:order 0 ; sh:hasValue org:Organization ] ;
+    sh:property [ sh:path dcterms:title ; sh:name "Short name"@en ; sh:description "The single short name of the organization, in English. Official proper names and acronyms are preserved."@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ; sh:pattern "\\S" ; sh:message "Provide exactly one non-empty English short name using dcterms:title with @en."@en ] ;
+    sh:property [ sh:path dcterms:description ; sh:name "Description"@en ; sh:description "The single textual description of the organization, in English."@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ; sh:pattern "\\S" ; sh:message "Provide exactly one non-empty English description using dcterms:description with @en."@en ] ;
+    sh:property [ sh:path owl:sameAs ; sh:name "ROR ID"@en ; sh:description "Optional full ROR HTTPS IRI identifying this same organization, not its parent or another organization. This profile permits at most one value for this property. The format check does not verify registration or the checksum."@en ; sh:order 3 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:pattern "^https://ror[.]org/0[0-9a-hjkmnp-tv-z]{6}[0-9]{2}$" ; sh:message "Use at most one full ROR IRI such as https://ror.org/02hdf6119, identifying the same organization."@en ] ;
+    sh:property [ sh:path foaf:depiction ; sh:name "Logo"@en ; sh:description "Optional HTTPS URL of an image representing the organization logo. No image format or filename extension is imposed."@en ; sh:order 4 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:pattern "^https://[^/?#\\s]+[^\\s<>\"{}|^`\\\\]*$" ; sh:message "Use at most one HTTPS IRI for the organization logo."@en ] ;
+    sh:property [ sh:path foaf:homepage ; sh:name "Website"@en ; sh:description "Optional absolute IRI of the organization website."@en ; sh:order 5 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "Use at most one absolute IRI for the organization website."@en ] ;
+    # Each organization needs its own document header, following LOC.
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The organization must have a metadata document at its IRI followed by .ttl in the same data graph."@en ;
+        sh:select """
+            PREFIX dcterms: <http://purl.org/dc/terms/>
+            SELECT $this WHERE {
+                FILTER NOT EXISTS {
+                    BIND(IRI(CONCAT(STR($this), ".ttl")) AS ?document)
+                    ?document dcterms:license ?license .
+                }
+            }
+        """ ;
+    ] .
+
+###############################################################################
+# Common instance-document metadata: LOC, with the RI conformsTo target
+###############################################################################
+
+orgshape:MetadataDocumentShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saporg: ;
+    sh:name "Metadata document"@en ;
+    sh:description "Administrative metadata about the Turtle document describing one Organization, including conformance to this application profile. The document IRI is the Organization IRI followed by .ttl. The document has no additional explicit RDF class or document-to-Organization predicate, following the RI profile pattern."@en ;
+    sh:targetSubjectsOf dcterms:conformsTo, dcterms:license, dcterms:creator, dcat:contactPoint, dcterms:publisher, dcterms:rights, dcterms:accessRights, dcat:version, dcterms:created, dcterms:modified ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/organizations-registry/[A-Za-z0-9][A-Za-z0-9_-]*[.]ttl$" ;
+    sh:not [ sh:class org:Organization ] ;
+    sh:message "Administrative metadata must belong to a separate document IRI following https://w3id.org/cnr-ismar/organizations-registry/{ID}.ttl, not to the organization itself."@en ;
+
+    ###########################################################################
+    # dcterms:license
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:license ;
+        sh:name "License"@en ;
+        sh:description "Mandatory license: exactly the Creative Commons Attribution 4.0 International (CC BY 4.0) IRI."@en ;
+        sh:order 1 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <https://creativecommons.org/licenses/by/4.0/> ;
+        sh:message "A metadata document must have exactly one dcterms:license: <https://creativecommons.org/licenses/by/4.0/>."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:creator and dcat:contactPoint - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:creator ;
+        sh:name "Creator"@en ;
+        sh:description "Mandatory fixed creator: Federico Bellati, identified by the ORCID IRI."@en ;
+        sh:order 2 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue orcid:0009-0000-9657-919X ;
+        sh:message "A metadata document must have exactly one dcterms:creator: <https://orcid.org/0009-0000-9657-919X>."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcat:contactPoint ;
+        sh:name "Contact point"@en ;
+        sh:description "Mandatory fixed contact, described as vcard:Individual with the exact name Federico Bellati and email IRI mailto:federico.bellati@cnr.it."@en ;
+        sh:order 3 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue vcard:Individual ;
+                sh:message "The contact point must be explicitly typed as vcard:Individual."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:fn ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Federico Bellati" ;
+                sh:message "The contact point must have exactly one untagged vcard:fn: Federico Bellati."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:hasEmail ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <mailto:federico.bellati@cnr.it> ;
+                sh:message "The contact point must have exactly one vcard:hasEmail: <mailto:federico.bellati@cnr.it>."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one contact point with the required type, name and email."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:publisher - required organization description
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:publisher ;
+        sh:name "Publisher"@en ;
+        sh:description "Mandatory CNR ISMAR publisher, identified by a blank node or IRI and described with the required explicit types, exact name and ROR link."@en ;
+        sh:order 4 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Agent ;
+                sh:message "The publisher must be explicitly typed as prov:Agent."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Organization ;
+                sh:message "The publisher must be explicitly typed as prov:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue foaf:Organization ;
+                sh:message "The publisher must be explicitly typed as foaf:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path foaf:name ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+                sh:message "The publisher must have exactly the untagged foaf:name 'Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche'."@en ;
+            ] ;
+            sh:property [
+                sh:path owl:sameAs ;
+                sh:minCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <https://ror.org/02hdf6119> ;
+                sh:message "The publisher must include owl:sameAs <https://ror.org/02hdf6119>; all owl:sameAs values must be IRIs."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one publisher described as the CNR ISMAR organization, with all required types, name and ROR link."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:rights and dcterms:accessRights - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:rights ;
+        sh:name "Rights"@en ;
+        sh:description "Mandatory fixed English rights statement clarifying that the license applies only to this metadata record. The trailing space is part of the required literal."@en ;
+        sh:order 5 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:hasValue "The licence (dcterms:license) applies to this metadata record only; "@en ;
+        sh:message "A metadata document must have exactly one dcterms:rights: the fixed English metadata-only license statement, including its trailing space."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:accessRights ;
+        sh:name "Access rights"@en ;
+        sh:description "Mandatory public access: exactly the PUBLIC IRI from the EU Access right authority table."@en ;
+        sh:order 6 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
+        sh:message "A metadata document must have exactly one dcterms:accessRights: <http://publications.europa.eu/resource/authority/access-right/PUBLIC>."@en ;
+    ] ;
+
+    sh:property [ sh:path dcat:version ; sh:name "Document version"@en ; sh:description "The editable version of this metadata document, independent of the semantic application profile version. The form starts at 1.0.0."@en ; sh:order 7 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ; sh:pattern "\\S" ] ;
+
+    # Dates of the organization instance document, recorded on the separate document resource.
+    sh:property [
+        sh:path dcterms:created ;
+        sh:name "Organization instance document creation date"@en ;
+        sh:description "The date and time the organization instance document was created. This is metadata about the instance document, not the semantic application profile or the organization itself."@en ;
+        sh:order 8 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The organization instance document must have exactly one dcterms:created value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:modified ;
+        sh:name "Organization instance document modification date"@en ;
+        sh:description "The date and time the organization instance document was last modified. This is metadata about the instance document, not the semantic application profile or the organization itself."@en ;
+        sh:order 9 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The organization instance document must have exactly one dcterms:modified value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [ sh:path dcterms:conformsTo ; sh:name "Application profile conformance"@en ; sh:description "The metadata document conforms to the versioned application profile identified by saporg:, distinct from the Turtle file referenced by rdfs:seeAlso."@en ; sh:order 10 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue saporg: ; sh:message "A metadata document must have exactly one dcterms:conformsTo pointing to <https://w3id.org/cnr-ismar/sap/organization/1.0.0/>."@en ] .
+
+</script>
+<script id="organization-form-app">
+'use strict';
+const PREFIXES = {rdf:'http://www.w3.org/1999/02/22-rdf-syntax-ns#', org:'http://www.w3.org/ns/org#', dcterms:'http://purl.org/dc/terms/', foaf:'http://xmlns.com/foaf/0.1/', dcat:'http://www.w3.org/ns/dcat#', vcard:'http://www.w3.org/2006/vcard/ns#', prov:'http://www.w3.org/ns/prov#', owl:'http://www.w3.org/2002/07/owl#'};
+const SH = 'http://www.w3.org/ns/shacl#', BASE = 'https://w3id.org/cnr-ismar/sap/organization/1.0.0/', SHAPEBASE = BASE + 'profile.ttl#';
+Object.assign(PREFIXES,{saporg:BASE,rdfs:'http://www.w3.org/2000/01/rdf-schema#',orcid:'https://orcid.org/',xsd:'http://www.w3.org/2001/XMLSchema#'});
+const $ = id => document.getElementById(id);
+const iriValid = value => /^[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"{}|^`\\]*$/u.test(value) && !/%(?![0-9a-f]{2})/i.test(value) && !/[\u0000-\u0020\u007f-\u009f]/u.test(value);
+const idValid = value => !!value && iriValid(PREFIXES.orgreg + value) && new RegExp(one(N3.DataFactory.namedNode(SHAPEBASE+'OrganizationShape'),'pattern').value).test(PREFIXES.orgreg + value);
+const resourceIRI = () => PREFIXES.orgreg + $('resourceID').value.trim();
+const documentIRI = () => resourceIRI() + '.ttl';
+let shapes, fields = [], metadataFields = [], output = '', imported = null;
+const nowUTC = () => new Date().toISOString();
+function dateTimeValid(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-](?:0\d|1[0-3]):[0-5]\d|[+-]14:00)?$/.exec(value);
+  return !!match && +match[2] >= 1 && +match[2] <= 12 && +match[3] >= 1 && +match[3] <= new Date(Date.UTC(+match[1],+match[2],0)).getUTCDate() && +match[4] <= 23 && +match[5] <= 59 && +match[6] <= 59 && Number.isFinite(Date.parse(value));
+}
+function compact(value, prefixes = PREFIXES) { for (const [prefix, ns] of Object.entries(prefixes)) if (value.startsWith(ns)) { const local = value.slice(ns.length); if (!local || /^[A-Za-z0-9_](?:[A-Za-z0-9_.:-]|%[0-9A-Fa-f]{2})*$/.test(local) && !local.endsWith('.')) return prefix + ':' + local; } return '<' + value + '>'; }
+function objects(store, subject, predicate) { return store.getObjects(subject, N3.DataFactory.namedNode(predicate), null); }
+function one(subject, predicate) { return objects(shapes, subject, SH + predicate)[0]; }
+function properties(shape) { return objects(shapes, shape, SH + 'property').sort((a,b) => Number(one(a,'order')?.value || 0) - Number(one(b,'order')?.value || 0)); }
+function list(head) { const result = []; while (head && head.value !== PREFIXES.rdf + 'nil') { result.push(objects(shapes,head,PREFIXES.rdf + 'first')[0]); head = objects(shapes,head,PREFIXES.rdf + 'rest')[0]; } return result; }
+function termText(term, prefixes = PREFIXES) { return term.termType === 'NamedNode' ? compact(term.value,prefixes) : term.termType === 'BlankNode' ? '_:' + term.value : JSON.stringify(term.value) + (term.language ? '@' + term.language : term.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string' ? '^^' + compact(term.datatype.value,prefixes) : ''); }
+function fixedBody(shape) {
+  return properties(shape).map(property => {
+    const path = one(property,'path'), nested = one(property,'node'), fixed = one(property,'hasValue');
+    const input = metadataFields.find(field => field.property.equals(property))?.input;
+    return '    ' + compact(path.value) + ' ' + (nested ? '[\n' + fixedBody(nested) + '\n    ]' : fixed ? termText(fixed) : JSON.stringify(input.value.trim()) + '^^' + compact(one(property,'datatype').value));
+  }).join(' ;\n');
+}
+function addField(root, id, label, value, help, readonly, multiline) {
+  const box = document.createElement('div'); box.className = 'field';
+  const caption = document.createElement('label'); caption.htmlFor = id; caption.textContent = label;
+  const input = document.createElement(multiline ? 'textarea' : 'input'); input.id = id; input.value = value; input.readOnly = readonly;
+  if (!readonly) input.required = true;
+  const note = document.createElement('p'); note.className = 'help'; note.id = id + '-help'; note.textContent = help; input.setAttribute('aria-describedby',note.id);
+  box.append(caption,input,note); root.append(box); return input;
+}
+function renderFixed(shape) {
+  for (const property of properties(shape)) {
+    const path = one(property,'path'), nested = one(property,'node');
+    if (nested) { renderFixed(nested); continue; }
+    if (path.value === PREFIXES.rdf + 'type' || path.value === PREFIXES.owl + 'sameAs') continue;
+    const fixed = one(property,'hasValue');
+    if (!fixed) {
+      const automatic = path.value === PREFIXES.dcterms+'modified', isDate = one(property,'datatype')?.value === PREFIXES.xsd+'dateTime';
+      const input = addField($('metadataFields'),'metadata-' + path.value.split(/[\/#]/).pop(),one(property,'name').value + (automatic ? ' (automatico)' : ' *'),isDate ? nowUTC() : '1.0.0',compact(path.value) + ' · ' + one(property,'description').value + (isDate ? ' · ISO 8601, es. 2026-10-08T09:46:37Z (UTC).' : ''),automatic,false);
+      metadataFields.push({property,input}); if (!automatic) input.addEventListener('input',update);
+      continue;
+    }
+    const ror = properties(shape).find(p => one(p,'path').value === PREFIXES.owl+'sameAs');
+    addField($('metadataFields'), 'fixed-' + $('metadataFields').childElementCount, one(property,'name')?.value || compact(path.value), fixed.value, compact(path.value) + (fixed.language ? ' @' + fixed.language : '') + (ror ? ' · ROR incluso automaticamente: ' + one(ror,'hasValue').value : ''), true, path.value.endsWith('/rights') || path.value.endsWith('/accessRights'));
+  }
+}
+function generateTurtle() {
+  const values = properties(N3.DataFactory.namedNode(SHAPEBASE+'OrganizationShape')).flatMap(property => {
+    const input = fields.find(field => field.property.equals(property))?.input;
+    const fixed = one(property,'hasValue'), isIRI = one(property,'nodeKind')?.value === SH + 'IRI';
+    const terms = fixed ? [termText(fixed)] : (one(property,'maxCount') ? [input.value] : input.value.split(/\r?\n/)).filter(value => value.trim()).map(value => isIRI ? '<' + value.trim() + '>' : JSON.stringify(value) + '@en');
+    return terms.length ? ['    ' + compact(one(property,'path').value) + ' ' + terms.join(', ')] : [];
+  });
+  const namespaces = {...imported?.prefixes,...PREFIXES};
+  const prefixes = Object.entries(namespaces).map(([prefix, ns]) => '@prefix ' + prefix + ': <' + ns + '> .').join('\n');
+  const turtle = prefixes + '\n\n<' + documentIRI() + '>\n    rdfs:seeAlso saporg:profile.ttl ;\n' + fixedBody(N3.DataFactory.namedNode(SHAPEBASE + 'MetadataDocumentShape')) + ' .\n\n<' + resourceIRI() + '>\n' + values.join(' ;\n') + ' .\n';
+  const data = imported && idValid($('resourceID').value.trim()) ? mergeImportedTurtle(turtle) : new N3.Store(new N3.Parser({format:'text/turtle'}).parse(turtle));
+  return serializeTurtle(data,prefixes,namespaces);
+}
+// Inline only singly referenced administrative blank nodes; preserve shared and named nodes.
+function serializeTurtle(data, prefixes, namespaces) {
+  const inline = new Set(), document = N3.DataFactory.namedNode(documentIRI());
+  const documentOrder = [PREFIXES.rdfs+'seeAlso',...properties(N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape')).map(property => one(property,'path').value)];
+  for (const predicate of [PREFIXES.dcat+'contactPoint',PREFIXES.dcterms+'publisher']) for (const node of objects(data,document,predicate)) if (node.termType === 'BlankNode' && data.countQuads(null,null,node,null) === 1) inline.add(node.id);
+  const body = (subject, indent) => {
+    const predicates = data.getPredicates(subject,null,null);
+    if (subject.equals(document)) predicates.sort((a,b) => (documentOrder.includes(a.value) ? documentOrder.indexOf(a.value) : documentOrder.length) - (documentOrder.includes(b.value) ? documentOrder.indexOf(b.value) : documentOrder.length));
+    return predicates.map(predicate => (subject.equals(document) && [PREFIXES.dcterms+'created',PREFIXES.dcterms+'modified'].includes(predicate.value) ? indent + '# The date and time this organization instance document was ' + (predicate.value === PREFIXES.dcterms+'created' ? 'created' : 'last modified') + '\n' : '') + indent + (predicate.value === PREFIXES.rdf+'type' ? 'a' : compact(predicate.value,namespaces)) + ' ' + objects(data,subject,predicate.value).map(term => inline.has(term.id) ? '[\n' + body(term,indent+'    ') + '\n' + indent + ']' : termText(term,namespaces)).join(', ')).join(' ;\n');
+  };
+  const subjects = [document,N3.DataFactory.namedNode(resourceIRI()),...data.getSubjects(null,null,null)];
+  return prefixes + '\n\n# Generated by SAP Organization single-page form\n# Profile URL: ' + BASE + 'profile.ttl\n# Profile version: ' + objects(shapes,N3.DataFactory.namedNode(BASE),PREFIXES.dcat+'version')[0].value + '\n\n' + [...new Map(subjects.map(subject => [subject.id,subject])).values()].filter(subject => !inline.has(subject.id) && data.countQuads(subject,null,null,null)).map(subject => termText(subject,namespaces) + '\n' + body(subject,'    ') + ' .').join('\n\n') + '\n';
+}
+// Replace represented values while retaining additional triples and node identities.
+function mergeImportedTurtle(turtle) {
+  const fresh = new N3.Store(new N3.Parser({format:'text/turtle'}).parse(turtle));
+  const resource = N3.DataFactory.namedNode(resourceIRI()), document = N3.DataFactory.namedNode(documentIRI());
+  const mapping = new Map(), renamed = new Map([[imported.resource.id,resource]]);
+  if (!imported.document.equals(imported.resource)) renamed.set(imported.document.id,document);
+  for (const predicate of [PREFIXES.dcat+'contactPoint',PREFIXES.dcterms+'publisher']) {
+    const original = objects(imported.data,imported.header,predicate)[0];
+    if (original && ['NamedNode','BlankNode'].includes(original.termType)) mapping.set(objects(fresh,document,predicate)[0].value,original);
+  }
+  const data = new N3.Store(imported.data.getQuads(null,null,null,null).map(q => N3.DataFactory.quad(renamed.get(q.subject.id) || q.subject,q.predicate,renamed.get(q.object.id) || q.object,q.graph)));
+  for (const {property} of fields) data.removeQuads(data.getQuads(resource,one(property,'path'),null,null));
+  if (imported.header.equals(imported.resource)) for (const property of properties(N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape'))) data.removeQuads(data.getQuads(resource,one(property,'path'),null,null));
+  data.removeQuads(data.getQuads(imported.header.equals(imported.resource) ? resource : document,N3.DataFactory.namedNode(PREFIXES.owl+'versionInfo'),null,null));
+  const generated = fresh.getQuads(null,null,null,null).map(q => N3.DataFactory.quad(mapping.get(q.subject.value) || q.subject,q.predicate,mapping.get(q.object.value) || q.object));
+  for (const q of generated) if (![PREFIXES.rdf+'type',PREFIXES.owl+'sameAs',PREFIXES.rdfs+'seeAlso'].includes(q.predicate.value)) data.removeQuads(data.getQuads(q.subject,q.predicate,null,null));
+  data.addQuads(generated);
+  return data;
+}
+// This evaluator implements only the Core components used by the integrated profile.
+// It is a form check, not a general-purpose SHACL or SPARQL processor.
+function checkNode(data, node, shape, issues, label) {
+  const kind = one(shape,'nodeKind')?.value;
+  if (kind === SH + 'IRI' && (node.termType !== 'NamedNode' || !iriValid(node.value))) issues.push(label + ': IRI assoluto richiesto.');
+  if (kind === SH + 'BlankNodeOrIRI' && !['NamedNode','BlankNode'].includes(node.termType)) issues.push(label + ': nodo IRI o anonimo richiesto.');
+  const pattern = one(shape,'pattern');
+  if (pattern && !new RegExp(pattern.value,one(shape,'flags')?.value || '').test(node.value)) issues.push(label + ': ID non valido per il registro previsto dal profilo.');
+  const excludedClass = one(shape,'not') && one(one(shape,'not'),'class');
+  if (excludedClass && data.countQuads(node,N3.DataFactory.namedNode(PREFIXES.rdf+'type'),excludedClass,null)) issues.push(label + ': i metadati devono appartenere al documento.');
+  for (const property of properties(shape)) {
+    const path = one(property,'path'), values = objects(data,node,path.value), name = one(property,'name')?.value || compact(path.value);
+    const min = one(property,'minCount'), max = one(property,'maxCount'), fixed = one(property,'hasValue');
+    if (min && values.length < Number(min.value)) issues.push(name + ': valore obbligatorio.');
+    if (max && values.length > Number(max.value)) issues.push(name + ': troppi valori.');
+    if (fixed && !values.some(value => value.equals(fixed))) issues.push(name + ': valore fisso richiesto dal profilo.');
+    for (const value of values) {
+      const datatype = one(property,'datatype'), languages = one(property,'languageIn'), length = one(property,'minLength'), nested = one(property,'node');
+      if (datatype && (value.termType !== 'Literal' || value.datatype.value !== datatype.value)) issues.push(name + ': tipo di valore errato.');
+      if (datatype?.value === PREFIXES.xsd+'dateTime' && !dateTimeValid(value.value)) issues.push(name + ': data e ora ISO 8601 non valide.');
+      if (languages && !list(languages).some(lang => value.language?.toLowerCase() === lang.value.toLowerCase())) issues.push(name + ': testo in inglese con @en richiesto.');
+      if (length && [...value.value].length < Number(length.value)) issues.push(name + ': almeno ' + length.value + ' caratteri richiesti.');
+      const valueKind = one(property,'nodeKind')?.value;
+      if (valueKind === SH+'IRI' && (value.termType !== 'NamedNode' || !iriValid(value.value))) issues.push(name + ': IRI assoluto richiesto.');
+      if (valueKind === SH+'BlankNodeOrIRI' && !['NamedNode','BlankNode'].includes(value.termType)) issues.push(name + ': nodo IRI o anonimo richiesto.');
+      if (one(property,'pattern') && !new RegExp(one(property,'pattern').value,one(property,'flags')?.value || '').test(value.value)) issues.push(name + ': ' + (one(property,'message')?.value || 'valore non conforme al formato richiesto.'));
+      if (nested) checkNode(data,value,nested,issues,name);
+    }
+  }
+}
+function checkGraph(data, resource) {
+  const issues = [];
+  checkNode(data,resource,N3.DataFactory.namedNode(SHAPEBASE+'OrganizationShape'),issues,'Organizzazione');
+  const documents = new Map();
+  for (const property of properties(N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape'))) for (const subject of data.getSubjects(one(property,'path'),null,null)) documents.set(subject.id,subject);
+  for (const document of documents.values()) checkNode(data,document,N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape'),issues,'Documento');
+  if (!data.countQuads(N3.DataFactory.namedNode(resource.value+'.ttl'),N3.DataFactory.namedNode(PREFIXES.dcterms+'license'),null,null)) issues.push('Manca l’intestazione amministrativa all’IRI dell’organizzazione seguito da .ttl.');
+  return issues;
+}
+function renderIssues(root, issues, heading, success) {
+  root.replaceChildren(); root.hidden = false;
+  const box = document.createElement('div'); box.className = 'alert ' + (issues.length ? 'warn' : 'ok');
+  const title = document.createElement('h3'); title.textContent = heading; box.append(title);
+  if (issues.length) { const ul = document.createElement('ul'); for (const issue of [...new Set(issues)]) { const li = document.createElement('li'); li.textContent = issue; ul.append(li); } box.append(ul); }
+  else { const p = document.createElement('p'); p.textContent = success; box.append(p); }
+  root.append(box);
+}
+function update(event) {
+  if (event?.type === 'input') $('metadata-modified').value = nowUTC();
+  const issues = [];
+  $('resourceAddress').textContent = idValid($('resourceID').value.trim()) ? resourceIRI() : 'Inserisci un IRI valido.';
+  $('documentAddress').textContent = idValid($('resourceID').value.trim()) ? documentIRI() : 'Inserisci un IRI valido.';
+  if (!idValid($('resourceID').value.trim())) issues.push('ID: inserisci solo l’identificativo locale, iniziando con una lettera o un numero e usando lettere, numeri, trattini o underscore. Il prefisso dell’IRI viene aggiunto automaticamente.');
+  for (const {property,input} of fields) {
+    if (one(property,'hasValue')) continue;
+    const values = (one(property,'maxCount') ? [input.value] : input.value.split(/\r?\n/)).filter(value => value.trim());
+    const valid = values.length >= Number(one(property,'minCount')?.value || 0) && values.every(value => (one(property,'nodeKind')?.value === SH+'IRI' ? iriValid(value.trim()) : value.trim().length > 0 && [...value].length >= Number(one(property,'minLength')?.value || 0)) && (!one(property,'pattern') || new RegExp(one(property,'pattern').value,one(property,'flags')?.value || '').test(value.trim())));
+    input.setAttribute('aria-invalid',String(!valid));
+    if (!valid) issues.push((one(property,'name')?.value || 'Campo') + ': ' + (one(property,'message')?.value || 'valore obbligatorio o non valido.'));
+  }
+  $('resourceID').setAttribute('aria-invalid',String(!idValid($('resourceID').value.trim())));
+  for (const {property,input} of metadataFields) {
+    const valid = !!input.value.trim() && (one(property,'datatype')?.value !== PREFIXES.xsd+'dateTime' || dateTimeValid(input.value.trim()));
+    input.setAttribute('aria-invalid',String(!valid));
+    if (!valid) issues.push(one(property,'name').value + ': ' + (one(property,'datatype')?.value === PREFIXES.xsd+'dateTime' ? 'inserisci una data e ora ISO 8601 valide; per un documento importato usa la data di prima creazione.' : 'valore obbligatorio.'));
+  }
+  try { output = generateTurtle(); } catch (error) { output = ''; issues.push('Impossibile generare il Turtle: ' + error.message); }
+  $('turtleOutput').value = output;
+  if (!issues.length) {
+    try {
+      const data = new N3.Store(new N3.Parser({format:'text/turtle'}).parse(output));
+      const resource = N3.DataFactory.namedNode(resourceIRI());
+      issues.push(...checkGraph(data,resource));
+    } catch (error) { issues.push('Turtle non valido: ' + error.message); }
+  }
+  renderIssues($('validationResult'),issues,issues.length ? 'Completa o correggi i dati del modulo' : 'Controlli del modulo superati','Puoi copiare o scaricare il documento Turtle.');
+  $('copyBtn').disabled = $('downloadBtn').disabled = !!issues.length; $('heroState').textContent = issues.length ? 'da compilare' : 'pronto'; $('exportStatus').textContent = '';
+}
+function showTab(button) {
+  for (const tab of document.querySelectorAll('[role=tab]')) { const selected = tab === button; tab.classList.toggle('active',selected); tab.setAttribute('aria-selected',String(selected)); tab.tabIndex = selected ? 0 : -1; const panel = $('panel-'+tab.dataset.tab); panel.hidden = !selected; panel.classList.toggle('active',selected); }
+}
+try {
+  shapes = new N3.Store(new N3.Parser({baseIRI:BASE,format:'text/turtle'}).parse($('embedded-profile').textContent,null,(prefix, namespace) => { if (prefix === 'orgreg') PREFIXES.orgreg = namespace.value; }));
+  for (const property of properties(N3.DataFactory.namedNode(SHAPEBASE+'OrganizationShape'))) {
+    const path = one(property,'path'), fixed = one(property,'hasValue'), id = 'field-' + path.value.split(/[\/#]/).pop();
+    if (fixed) continue;
+    const required = Number(one(property,'minCount')?.value || 0) > 0, multiple = !one(property,'maxCount');
+    const input = addField($('resourceFields'),id,(one(property,'name')?.value || compact(path.value)) + (required ? ' *' : ''),'',compact(path.value) + ' · ' + (one(property,'description')?.value || '') + (multiple ? (one(property,'nodeKind')?.value === SH+'IRI' ? ' · Optional (0…N): enter one absolute IRI per line.' : ' · Facoltativo (0…N): inserisci un nome per riga.') : ''),false,multiple || path.value === PREFIXES.dcterms+'description');
+    input.required = required; if (one(property,'minLength')) input.minLength = Number(one(property,'minLength').value);
+    if (path.value === PREFIXES.foaf+'depiction') input.placeholder = 'https://example.org/logo.png';
+    if (path.value === PREFIXES.owl+'sameAs') {
+      input.placeholder = 'https://ror.org/02hdf6119';
+      const link = document.createElement('a'); link.href = 'https://ror.org/search'; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Cerca l’organizzazione in ROR';
+      $(id+'-help').append(' · ',link,': copia l’URL ROR completo e verifica che identifichi proprio questa organizzazione.');
+    }
+    fields.push({property,input}); input.addEventListener('input',update);
+  }
+  renderFixed(N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape'));
+  $('resourceID').addEventListener('input',update);
+  $('heroVersion').textContent = objects(shapes,N3.DataFactory.namedNode(BASE),PREFIXES.dcat+'version')[0].value;
+  $('shapeStatus').textContent = 'Profilo integrato caricato. I campi e i controlli sono ricavati dalle regole SHACL.';
+  for (const button of document.querySelectorAll('[role=tab]')) {
+    button.addEventListener('click',() => showTab(button));
+    button.addEventListener('keydown',event => { const tabs = [...document.querySelectorAll('[role=tab]')], index = tabs.indexOf(button); const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1; if (next >= 0) { event.preventDefault(); showTab(tabs[next]); tabs[next].focus(); } });
+  }
+  $('uploadLabel').addEventListener('keydown',event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('ttlUpload').click(); } });
+  $('ttlUpload').addEventListener('change',async event => {
+    const file = event.target.files?.[0]; if (!file) return;
+    try {
+      const prefixes = {};
+      const data = new N3.Store(new N3.Parser({baseIRI:PREFIXES.orgreg + encodeURIComponent(file.name),format:'text/turtle'}).parse(await file.text(),null,(prefix, namespace) => { prefixes[prefix] = namespace.value; }));
+      let resources = data.getSubjects(N3.DataFactory.namedNode(PREFIXES.rdf+'type'),N3.DataFactory.namedNode(PREFIXES.org+'Organization'),null);
+      if (!resources.length) { const candidates = new Map(); for (const {property} of fields) for (const subject of data.getSubjects(one(property,'path'),null,null)) candidates.set(subject.id,subject); resources = [...candidates.values()]; }
+      if (resources.length !== 1 || resources[0].termType !== 'NamedNode') throw new Error('Il file deve contenere una sola organizzazione identificata da un IRI.');
+      const resource = resources[0], issues = checkGraph(data,resource);
+      const id = resource.value.startsWith(PREFIXES.orgreg) ? resource.value.slice(PREFIXES.orgreg.length) : '';
+      if (!idValid(id)) throw new Error('Il file non contiene un IRI valido nel registro previsto dal profilo.');
+      const headers = new Map();
+      for (const property of properties(N3.DataFactory.namedNode(SHAPEBASE+'MetadataDocumentShape'))) for (const subject of data.getSubjects(one(property,'path'),null,null)) if (subject.termType === 'NamedNode' && !subject.equals(resource)) headers.set(subject.id,subject);
+      const expectedDocument = N3.DataFactory.namedNode(resource.value + '.ttl');
+      const document = data.countQuads(expectedDocument,null,null,null) ? expectedDocument : headers.size === 1 ? [...headers.values()][0] : expectedDocument;
+      imported = {data,prefixes,resource,document,header:headers.size ? document : resource};
+      $('resourceID').value = id;
+      for (const {property,input} of fields) { const values = objects(data,resource,one(property,'path').value); input.value = one(property,'maxCount') ? values[0]?.value || '' : values.map(value => value.value).join('\n'); }
+      for (const {property,input} of metadataFields) {
+        const path = one(property,'path').value, value = objects(data,imported.header,path)[0];
+        input.value = value?.value ?? (path === PREFIXES.dcat+'version' ? objects(data,imported.header,PREFIXES.owl+'versionInfo')[0]?.value || '1.0.0' : path === PREFIXES.dcterms+'modified' ? nowUTC() : '');
+      }
+      update();
+      renderIssues($('importValidationResult'),issues,'File originale: ' + file.name,'Controlli del modulo superati sul Turtle caricato, prima delle modifiche.');
+      $('importStatus').textContent = 'File locale caricato: ' + file.name + (issues.length ? '. Rilevati ' + issues.length + ' problemi nel file originale: vedi Validazione.' : '. Controlli sul file originale superati.') + ' Il documento generato usa l’indirizzo del registro composto dall’ID e da .ttl. Il tipo e i metadati fissi sono applicati automaticamente; le proprietà aggiuntive sono conservate.' + (!$('metadata-created').value ? ' Data di creazione assente: inserisci la data di prima creazione del documento.' : '');
+    } catch (error) {
+      $('importStatus').textContent = 'Importazione non riuscita (' + file.name + '): ' + error.message;
+      renderIssues($('importValidationResult'),[error.message],'File non importato: ' + file.name,'');
+    } finally { event.target.value = ''; }
+  });
+  $('copyBtn').addEventListener('click',async () => { try { await navigator.clipboard.writeText(output); $('exportStatus').textContent = 'Turtle copiato.'; } catch { showTab($('tab-turtle')); $('turtleOutput').focus(); $('turtleOutput').select(); $('exportStatus').textContent = 'Premi Ctrl+C per copiare il testo selezionato.'; } });
+  $('downloadBtn').addEventListener('click',() => { const url = URL.createObjectURL(new Blob([output],{type:'text/turtle;charset=utf-8'})); const a = document.createElement('a'); a.href = url; a.download = resourceIRI().slice(PREFIXES.orgreg.length) + '.ttl'; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000); $('exportStatus').textContent = 'Turtle scaricato.'; });
+  update();
+} catch (error) { $('shapeStatus').textContent = 'Impossibile caricare il modulo: ' + error.message + '. Verifica la connessione Internet e che la CDN cdn.jsdelivr.net sia accessibile.'; $('shapeStatus').className = 'alert err'; }
+</script>
+</body>
+</html>

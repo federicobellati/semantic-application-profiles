@@ -1,0 +1,272 @@
+###############################################################################
+# CNR ISMAR - Organization Application Profile 1.0.0
+# The form combines a local ID with the fixed entity namespace; no duplicate identifier is required.
+# Entity namespace confirmed by the profile owner: organizations-registry.
+# Administrative metadata describes the separate entity-IRI + .ttl document.
+# Cardinalities, HTTPS logo URLs and fixed metadata are local profile rules.
+# All selected vocabulary terms are officially defined; no local data properties.
+###############################################################################
+
+@prefix orgreg:    <https://w3id.org/cnr-ismar/organizations-registry/> .
+@prefix saporg:    <https://w3id.org/cnr-ismar/sap/organization/1.0.0/> .
+@prefix orgshape:  <https://w3id.org/cnr-ismar/sap/organization/1.0.0/profile.ttl#> .
+@prefix org:       <http://www.w3.org/ns/org#> .
+@prefix prof:      <http://www.w3.org/ns/dx/prof/> .
+@prefix sh:        <http://www.w3.org/ns/shacl#> .
+@prefix rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:      <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms:   <http://purl.org/dc/terms/> .
+@prefix dcat:      <http://www.w3.org/ns/dcat#> .
+@prefix vcard:     <http://www.w3.org/2006/vcard/ns#> .
+@prefix orcid:     <https://orcid.org/> .
+@prefix prov:      <http://www.w3.org/ns/prov#> .
+@prefix foaf:      <http://xmlns.com/foaf/0.1/> .
+@prefix owl:       <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:       <http://www.w3.org/2001/XMLSchema#> .
+
+# Profile document metadata
+saporg:
+    a prof:Profile ;
+    dcterms:title "CNR ISMAR Semantic Application Profile for Organizations"@en ;
+    dcterms:description "Minimal application profile for describing organizations with separate document-level administrative metadata."@en ;
+    dcterms:identifier "cnr-ismar-sap-organization-1.0.0" ;
+    # Version indicator for this semantic profile
+    dcat:version "1.0.0" ;
+    dcterms:issued "2026-11-12"^^xsd:date ;
+    dcterms:publisher [
+        a prov:Agent, prov:Organization, foaf:Organization ;
+        foaf:name "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+        owl:sameAs <https://ror.org/02hdf6119>
+    ] ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator orcid:0009-0000-9657-919X ;
+    dcat:contactPoint [
+        a vcard:Individual ;
+        vcard:fn "Federico Bellati" ;
+        vcard:hasEmail <mailto:federico.bellati@cnr.it>
+    ] ;
+
+    dcterms:conformsTo <https://www.w3.org/TR/shacl/> ;
+
+    dcterms:hasPart orgshape:OrganizationShape, orgshape:MetadataDocumentShape .
+
+###############################################################################
+# Organization-specific validation rules
+###############################################################################
+
+orgshape:OrganizationShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saporg: ;
+    sh:name "Organization"@en ;
+    sh:description "An organization identified by its registry IRI, with one short name and one description in English. ROR identity, logo and homepage are optional single values. The form constructs the entity IRI from the fixed namespace and a local ID; no identifier property is repeated. The metadata document has the entity IRI followed by .ttl. Additional types and properties are allowed."@en ;
+    sh:targetClass org:Organization ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/organizations-registry/[A-Za-z0-9][A-Za-z0-9_-]*$" ;
+    sh:message "The organization IRI must be https://w3id.org/cnr-ismar/organizations-registry/{ID}; ID starts with a letter or number and contains only letters, numbers, hyphens or underscores."@en ;
+    sh:property [ sh:path rdf:type ; sh:name "Resource type"@en ; sh:order 0 ; sh:hasValue org:Organization ] ;
+    sh:property [ sh:path dcterms:title ; sh:name "Short name"@en ; sh:description "The single short name of the organization, in English. Official proper names and acronyms are preserved."@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ; sh:pattern "\\S" ; sh:message "Provide exactly one non-empty English short name using dcterms:title with @en."@en ] ;
+    sh:property [ sh:path dcterms:description ; sh:name "Description"@en ; sh:description "The single textual description of the organization, in English."@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" ) ; sh:minLength 1 ; sh:pattern "\\S" ; sh:message "Provide exactly one non-empty English description using dcterms:description with @en."@en ] ;
+    sh:property [ sh:path owl:sameAs ; sh:name "ROR ID"@en ; sh:description "Optional full ROR HTTPS IRI identifying this same organization, not its parent or another organization. This profile permits at most one value for this property. The format check does not verify registration or the checksum."@en ; sh:order 3 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:pattern "^https://ror[.]org/0[0-9a-hjkmnp-tv-z]{6}[0-9]{2}$" ; sh:message "Use at most one full ROR IRI such as https://ror.org/02hdf6119, identifying the same organization."@en ] ;
+    sh:property [ sh:path foaf:depiction ; sh:name "Logo"@en ; sh:description "Optional HTTPS URL of an image representing the organization logo. No image format or filename extension is imposed."@en ; sh:order 4 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:pattern "^https://[^/?#\\s]+[^\\s<>\"{}|^`\\\\]*$" ; sh:message "Use at most one HTTPS IRI for the organization logo."@en ] ;
+    sh:property [ sh:path foaf:homepage ; sh:name "Website"@en ; sh:description "Optional absolute IRI of the organization website."@en ; sh:order 5 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:message "Use at most one absolute IRI for the organization website."@en ] ;
+    # Each organization needs its own document header, following LOC.
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The organization must have a metadata document at its IRI followed by .ttl in the same data graph."@en ;
+        sh:select """
+            PREFIX dcterms: <http://purl.org/dc/terms/>
+            SELECT $this WHERE {
+                FILTER NOT EXISTS {
+                    BIND(IRI(CONCAT(STR($this), ".ttl")) AS ?document)
+                    ?document dcterms:license ?license .
+                }
+            }
+        """ ;
+    ] .
+
+###############################################################################
+# Common instance-document metadata: LOC, with the RI conformsTo target
+###############################################################################
+
+orgshape:MetadataDocumentShape
+    a sh:NodeShape ;
+    dcterms:isPartOf saporg: ;
+    sh:name "Metadata document"@en ;
+    sh:description "Administrative metadata about the Turtle document describing one Organization, including conformance to this application profile. The document IRI is the Organization IRI followed by .ttl. The document has no additional explicit RDF class or document-to-Organization predicate, following the RI profile pattern."@en ;
+    sh:targetSubjectsOf dcterms:conformsTo, dcterms:license, dcterms:creator, dcat:contactPoint, dcterms:publisher, dcterms:rights, dcterms:accessRights, dcat:version, dcterms:created, dcterms:modified ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/organizations-registry/[A-Za-z0-9][A-Za-z0-9_-]*[.]ttl$" ;
+    sh:not [ sh:class org:Organization ] ;
+    sh:message "Administrative metadata must belong to a separate document IRI following https://w3id.org/cnr-ismar/organizations-registry/{ID}.ttl, not to the organization itself."@en ;
+
+    ###########################################################################
+    # dcterms:license
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:license ;
+        sh:name "License"@en ;
+        sh:description "Mandatory license: exactly the Creative Commons Attribution 4.0 International (CC BY 4.0) IRI."@en ;
+        sh:order 1 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <https://creativecommons.org/licenses/by/4.0/> ;
+        sh:message "A metadata document must have exactly one dcterms:license: <https://creativecommons.org/licenses/by/4.0/>."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:creator and dcat:contactPoint - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:creator ;
+        sh:name "Creator"@en ;
+        sh:description "Mandatory fixed creator: Federico Bellati, identified by the ORCID IRI."@en ;
+        sh:order 2 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue orcid:0009-0000-9657-919X ;
+        sh:message "A metadata document must have exactly one dcterms:creator: <https://orcid.org/0009-0000-9657-919X>."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcat:contactPoint ;
+        sh:name "Contact point"@en ;
+        sh:description "Mandatory fixed contact, described as vcard:Individual with the exact name Federico Bellati and email IRI mailto:federico.bellati@cnr.it."@en ;
+        sh:order 3 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue vcard:Individual ;
+                sh:message "The contact point must be explicitly typed as vcard:Individual."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:fn ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Federico Bellati" ;
+                sh:message "The contact point must have exactly one untagged vcard:fn: Federico Bellati."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:hasEmail ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <mailto:federico.bellati@cnr.it> ;
+                sh:message "The contact point must have exactly one vcard:hasEmail: <mailto:federico.bellati@cnr.it>."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one contact point with the required type, name and email."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:publisher - required organization description
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:publisher ;
+        sh:name "Publisher"@en ;
+        sh:description "Mandatory CNR ISMAR publisher, identified by a blank node or IRI and described with the required explicit types, exact name and ROR link."@en ;
+        sh:order 4 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Agent ;
+                sh:message "The publisher must be explicitly typed as prov:Agent."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Organization ;
+                sh:message "The publisher must be explicitly typed as prov:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue foaf:Organization ;
+                sh:message "The publisher must be explicitly typed as foaf:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path foaf:name ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+                sh:message "The publisher must have exactly the untagged foaf:name 'Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche'."@en ;
+            ] ;
+            sh:property [
+                sh:path owl:sameAs ;
+                sh:minCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <https://ror.org/02hdf6119> ;
+                sh:message "The publisher must include owl:sameAs <https://ror.org/02hdf6119>; all owl:sameAs values must be IRIs."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one publisher described as the CNR ISMAR organization, with all required types, name and ROR link."@en ;
+    ] ;
+
+    ###########################################################################
+    # dcterms:rights and dcterms:accessRights - mandatory fixed values
+    ###########################################################################
+
+    sh:property [
+        sh:path dcterms:rights ;
+        sh:name "Rights"@en ;
+        sh:description "Mandatory fixed English rights statement clarifying that the license applies only to this metadata record. The trailing space is part of the required literal."@en ;
+        sh:order 5 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:hasValue "The licence (dcterms:license) applies to this metadata record only; "@en ;
+        sh:message "A metadata document must have exactly one dcterms:rights: the fixed English metadata-only license statement, including its trailing space."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:accessRights ;
+        sh:name "Access rights"@en ;
+        sh:description "Mandatory public access: exactly the PUBLIC IRI from the EU Access right authority table."@en ;
+        sh:order 6 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
+        sh:message "A metadata document must have exactly one dcterms:accessRights: <http://publications.europa.eu/resource/authority/access-right/PUBLIC>."@en ;
+    ] ;
+
+    sh:property [ sh:path dcat:version ; sh:name "Document version"@en ; sh:description "The editable version of this metadata document, independent of the semantic application profile version. The form starts at 1.0.0."@en ; sh:order 7 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ; sh:pattern "\\S" ] ;
+
+    # Dates of the organization instance document, recorded on the separate document resource.
+    sh:property [
+        sh:path dcterms:created ;
+        sh:name "Organization instance document creation date"@en ;
+        sh:description "The date and time the organization instance document was created. This is metadata about the instance document, not the semantic application profile or the organization itself."@en ;
+        sh:order 8 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The organization instance document must have exactly one dcterms:created value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:modified ;
+        sh:name "Organization instance document modification date"@en ;
+        sh:description "The date and time the organization instance document was last modified. This is metadata about the instance document, not the semantic application profile or the organization itself."@en ;
+        sh:order 9 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The organization instance document must have exactly one dcterms:modified value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [ sh:path dcterms:conformsTo ; sh:name "Application profile conformance"@en ; sh:description "The metadata document conforms to the versioned application profile identified by saporg:, distinct from the Turtle file referenced by rdfs:seeAlso."@en ; sh:order 10 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue saporg: ; sh:message "A metadata document must have exactly one dcterms:conformsTo pointing to <https://w3id.org/cnr-ismar/sap/organization/1.0.0/>."@en ] .
+
