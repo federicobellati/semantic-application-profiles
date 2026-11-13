@@ -1,1 +1,251 @@
+###############################################################################
+# CNR ISMAR - Facility Semantic Application Profile 1.0.0
+# Profile metadata and SHACL constraints in a single Turtle document.
+###############################################################################
 
+@prefix sapfac: <https://w3id.org/cnr-ismar/sap/facility/1.0.0/> .
+@prefix facreg: <https://w3id.org/cnr-ismar/facilities-registry/> .
+@prefix locreg: <https://w3id.org/cnr-ismar/locations-registry/> .
+@prefix prof: <http://www.w3.org/ns/dx/prof/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix orcid: <https://orcid.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+###############################################################################
+# PROFILE
+###############################################################################
+
+sapfac:
+    a prof:Profile ;
+    dcterms:title "CNR ISMAR Semantic Application Profile for Facilities"@en ;
+    dcterms:description "Application profile defining common information and SHACL constraints for facilities described using the SOSA Asset class. Facility resources use the https://w3id.org/cnr-ismar/facilities-registry/ namespace."@en ;
+    dcterms:identifier "cnr-ismar-sap-facility-1.0.0" ;
+    dcat:version "1.0.0" ;
+    # Creation date of this profile; formal issuance has not been established.
+    dcterms:created "2026-11-11"^^xsd:date ;
+    dcterms:publisher [
+        a prov:Agent, prov:Organization, foaf:Organization ;
+        foaf:name "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+        owl:sameAs <https://ror.org/02hdf6119>
+    ] ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator orcid:0009-0000-9657-919X ;
+    dcat:contactPoint [
+        a vcard:Individual ;
+        vcard:fn "Federico Bellati" ;
+        vcard:hasEmail <mailto:federico.bellati@cnr.it>
+    ] ;
+    dcterms:conformsTo <https://www.w3.org/TR/shacl12-core/> ;
+    dcterms:hasPart sapfac:MetadataDocumentShape, sapfac:AssetShape .
+
+###############################################################################
+# SHACL VALIDATION RULES
+###############################################################################
+sapfac:MetadataDocumentShape
+    a sh:NodeShape ;
+    dcterms:isPartOf sapfac: ;
+    sh:name "Metadata document"@en ;
+    sh:description "Administrative metadata of an individual Turtle document in the facilities registry, including conformance to this application profile. The document IRI is the described facility IRI followed by .ttl. These metadata describe the registry document. The document has no additional explicit RDF class or document-to-facility predicate."@en ;
+    sh:targetSubjectsOf dcterms:license, dcterms:creator, dcat:contactPoint, dcterms:publisher, dcterms:rights, dcterms:accessRights, dcat:version, dcterms:modified ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/facilities-registry/[A-Za-z0-9][A-Za-z0-9_-]*[.]ttl$" ;
+    sh:not [ sh:class sosa:Asset ] ;
+    sh:message "Administrative metadata must belong to a separate document IRI following https://w3id.org/cnr-ismar/facilities-registry/{ID}.ttl, not to the described facility."@en ;
+
+
+    sh:property [
+        sh:path dcterms:license ;
+        sh:name "License"@en ;
+        sh:description "Mandatory license: exactly the Creative Commons Attribution 4.0 International (CC BY 4.0) IRI."@en ;
+        sh:order 1 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <https://creativecommons.org/licenses/by/4.0/> ;
+        sh:message "A metadata document must have exactly one dcterms:license: <https://creativecommons.org/licenses/by/4.0/>."@en ;
+    ] ;
+
+
+    sh:property [
+        sh:path dcterms:creator ;
+        sh:name "Creator"@en ;
+        sh:description "Mandatory fixed creator: Federico Bellati, identified by the ORCID IRI."@en ;
+        sh:order 2 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue orcid:0009-0000-9657-919X ;
+        sh:message "A metadata document must have exactly one dcterms:creator: <https://orcid.org/0009-0000-9657-919X>."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcat:contactPoint ;
+        sh:name "Contact point"@en ;
+        sh:description "Mandatory fixed contact, described as vcard:Individual with the exact name Federico Bellati and email IRI mailto:federico.bellati@cnr.it."@en ;
+        sh:order 3 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue vcard:Individual ;
+                sh:message "The contact point must be explicitly typed as vcard:Individual."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:fn ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Federico Bellati" ;
+                sh:message "The contact point must have exactly one untagged vcard:fn: Federico Bellati."@en ;
+            ] ;
+            sh:property [
+                sh:path vcard:hasEmail ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <mailto:federico.bellati@cnr.it> ;
+                sh:message "The contact point must have exactly one vcard:hasEmail: <mailto:federico.bellati@cnr.it>."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one contact point with the required type, name and email."@en ;
+    ] ;
+
+
+    sh:property [
+        sh:path dcterms:publisher ;
+        sh:name "Publisher"@en ;
+        sh:description "Mandatory CNR ISMAR publisher, identified by a blank node or IRI and described with the required explicit types, exact name and ROR link."@en ;
+        sh:order 4 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Agent ;
+                sh:message "The publisher must be explicitly typed as prov:Agent."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue prov:Organization ;
+                sh:message "The publisher must be explicitly typed as prov:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path rdf:type ;
+                sh:hasValue foaf:Organization ;
+                sh:message "The publisher must be explicitly typed as foaf:Organization."@en ;
+            ] ;
+            sh:property [
+                sh:path foaf:name ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:string ;
+                sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" ;
+                sh:message "The publisher must have exactly the untagged foaf:name 'Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche'."@en ;
+            ] ;
+            sh:property [
+                sh:path owl:sameAs ;
+                sh:minCount 1 ;
+                sh:nodeKind sh:IRI ;
+                sh:hasValue <https://ror.org/02hdf6119> ;
+                sh:message "The publisher must include owl:sameAs <https://ror.org/02hdf6119>; all owl:sameAs values must be IRIs."@en ;
+            ] ;
+        ] ;
+        sh:message "A metadata document must have exactly one publisher described as the CNR ISMAR organization, with all required types, name and ROR link."@en ;
+    ] ;
+
+
+    sh:property [
+        sh:path dcterms:rights ;
+        sh:name "Rights"@en ;
+        sh:description "Mandatory fixed English rights statement clarifying that the license applies only to this metadata record. The trailing space is part of the required literal."@en ;
+        sh:order 5 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:languageIn ( "en" ) ;
+        sh:hasValue "The licence (dcterms:license) applies to this metadata record only; "@en ;
+        sh:message "A metadata document must have exactly one dcterms:rights: the fixed English metadata-only license statement, including its trailing space."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:accessRights ;
+        sh:name "Access rights"@en ;
+        sh:description "Mandatory public access: exactly the PUBLIC IRI from the EU Access right authority table."@en ;
+        sh:order 6 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
+        sh:message "A metadata document must have exactly one dcterms:accessRights: <http://publications.europa.eu/resource/authority/access-right/PUBLIC>."@en ;
+    ] ;
+
+    sh:property [ sh:path dcat:version ; sh:name "Document version"@en ; sh:description "The editable version of this metadata document, independent of the semantic application profile version."@en ; sh:order 7 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ; sh:pattern "\\S" ] ;
+
+    sh:property [
+        sh:path dcterms:created ;
+        sh:name "Registry document creation date"@en ;
+        sh:description "The date and time the registry document was created. This is metadata about the instance document, not the semantic application profile or the described facility."@en ;
+        sh:order 8 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The registry document must have exactly one dcterms:created value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [
+        sh:path dcterms:modified ;
+        sh:name "Registry document modification date"@en ;
+        sh:description "The date and time the registry document was last modified. This is metadata about the instance document, not the semantic application profile or the described facility."@en ;
+        sh:order 9 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+        sh:message "The registry document must have exactly one dcterms:modified value typed as xsd:dateTime."@en ;
+    ] ;
+
+    sh:property [ sh:path dcterms:conformsTo ; sh:name "Application profile conformance"@en ; sh:description "The registry document conforms to the versioned application profile identified by sapfac:."@en ; sh:order 10 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue sapfac: ; sh:message "A metadata document must have exactly one dcterms:conformsTo pointing to <https://w3id.org/cnr-ismar/sap/facility/1.0.0/>."@en ] .
+
+sapfac:AssetShape
+    a sh:NodeShape ;
+    dcterms:isPartOf sapfac: ;
+    sh:name "Asset"@en ;
+    sh:targetClass sosa:Asset ;
+    sh:nodeKind sh:IRI ;
+    # Form order starts with the required registry ID (the Asset IRI), then follows sh:order.
+    sh:property [ sh:path rdf:type ; sh:name "RDF class"@en ; sh:order 0 ; sh:hasValue sosa:Asset ] ;
+    sh:property [ sh:path skos:notation ; sh:name "Abbreviated name"@en ; sh:order 1 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ; sh:maxLength 35 ] ;
+    sh:property [ sh:path rdfs:label ; sh:name "Label"@en ; sh:order 2 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:minLength 1 ] ;
+    sh:property [ sh:path schema:description ; sh:name "Description"@en ; sh:order 3 ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ; sh:minLength 1 ] ;
+    sh:property [ sh:path foaf:depiction ; sh:name "Depiction"@en ; sh:order 4 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path dcterms:type ; sh:name "Asset type"@en ; sh:description "A concept from SeaVoX Platform Categories (NERC L06), using the current concept IRI. Allowed values follow collection version 21, checked on 2026-11-11."@en ; sh:order 5 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:in ( <http://vocab.nerc.ac.uk/collection/L06/current/0/> <http://vocab.nerc.ac.uk/collection/L06/current/10/> <http://vocab.nerc.ac.uk/collection/L06/current/11/> <http://vocab.nerc.ac.uk/collection/L06/current/12/> <http://vocab.nerc.ac.uk/collection/L06/current/13/> <http://vocab.nerc.ac.uk/collection/L06/current/14/> <http://vocab.nerc.ac.uk/collection/L06/current/15/> <http://vocab.nerc.ac.uk/collection/L06/current/16/> <http://vocab.nerc.ac.uk/collection/L06/current/17/> <http://vocab.nerc.ac.uk/collection/L06/current/18/> <http://vocab.nerc.ac.uk/collection/L06/current/19/> <http://vocab.nerc.ac.uk/collection/L06/current/20/> <http://vocab.nerc.ac.uk/collection/L06/current/21/> <http://vocab.nerc.ac.uk/collection/L06/current/22/> <http://vocab.nerc.ac.uk/collection/L06/current/23/> <http://vocab.nerc.ac.uk/collection/L06/current/24/> <http://vocab.nerc.ac.uk/collection/L06/current/25/> <http://vocab.nerc.ac.uk/collection/L06/current/26/> <http://vocab.nerc.ac.uk/collection/L06/current/27/> <http://vocab.nerc.ac.uk/collection/L06/current/30/> <http://vocab.nerc.ac.uk/collection/L06/current/31/> <http://vocab.nerc.ac.uk/collection/L06/current/32/> <http://vocab.nerc.ac.uk/collection/L06/current/33/> <http://vocab.nerc.ac.uk/collection/L06/current/34/> <http://vocab.nerc.ac.uk/collection/L06/current/35/> <http://vocab.nerc.ac.uk/collection/L06/current/36/> <http://vocab.nerc.ac.uk/collection/L06/current/37/> <http://vocab.nerc.ac.uk/collection/L06/current/38/> <http://vocab.nerc.ac.uk/collection/L06/current/39/> <http://vocab.nerc.ac.uk/collection/L06/current/3A/> <http://vocab.nerc.ac.uk/collection/L06/current/3B/> <http://vocab.nerc.ac.uk/collection/L06/current/3C/> <http://vocab.nerc.ac.uk/collection/L06/current/3D/> <http://vocab.nerc.ac.uk/collection/L06/current/3Z/> <http://vocab.nerc.ac.uk/collection/L06/current/41/> <http://vocab.nerc.ac.uk/collection/L06/current/42/> <http://vocab.nerc.ac.uk/collection/L06/current/43/> <http://vocab.nerc.ac.uk/collection/L06/current/44/> <http://vocab.nerc.ac.uk/collection/L06/current/45/> <http://vocab.nerc.ac.uk/collection/L06/current/46/> <http://vocab.nerc.ac.uk/collection/L06/current/47/> <http://vocab.nerc.ac.uk/collection/L06/current/48/> <http://vocab.nerc.ac.uk/collection/L06/current/49/> <http://vocab.nerc.ac.uk/collection/L06/current/4A/> <http://vocab.nerc.ac.uk/collection/L06/current/50/> <http://vocab.nerc.ac.uk/collection/L06/current/51/> <http://vocab.nerc.ac.uk/collection/L06/current/52/> <http://vocab.nerc.ac.uk/collection/L06/current/53/> <http://vocab.nerc.ac.uk/collection/L06/current/54/> <http://vocab.nerc.ac.uk/collection/L06/current/55/> <http://vocab.nerc.ac.uk/collection/L06/current/60/> <http://vocab.nerc.ac.uk/collection/L06/current/61/> <http://vocab.nerc.ac.uk/collection/L06/current/62/> <http://vocab.nerc.ac.uk/collection/L06/current/63/> <http://vocab.nerc.ac.uk/collection/L06/current/64/> <http://vocab.nerc.ac.uk/collection/L06/current/65/> <http://vocab.nerc.ac.uk/collection/L06/current/66/> <http://vocab.nerc.ac.uk/collection/L06/current/67/> <http://vocab.nerc.ac.uk/collection/L06/current/68/> <http://vocab.nerc.ac.uk/collection/L06/current/69/> <http://vocab.nerc.ac.uk/collection/L06/current/6A/> <http://vocab.nerc.ac.uk/collection/L06/current/6B/> <http://vocab.nerc.ac.uk/collection/L06/current/6C/> <http://vocab.nerc.ac.uk/collection/L06/current/6D/> <http://vocab.nerc.ac.uk/collection/L06/current/6Z/> <http://vocab.nerc.ac.uk/collection/L06/current/70/> <http://vocab.nerc.ac.uk/collection/L06/current/71/> <http://vocab.nerc.ac.uk/collection/L06/current/72/> <http://vocab.nerc.ac.uk/collection/L06/current/73/> <http://vocab.nerc.ac.uk/collection/L06/current/74/> <http://vocab.nerc.ac.uk/collection/L06/current/75/> <http://vocab.nerc.ac.uk/collection/L06/current/76/> <http://vocab.nerc.ac.uk/collection/L06/current/77/> <http://vocab.nerc.ac.uk/collection/L06/current/90/> <http://vocab.nerc.ac.uk/collection/L06/current/91/> <http://vocab.nerc.ac.uk/collection/L06/current/92/> <http://vocab.nerc.ac.uk/collection/L06/current/93/> <http://vocab.nerc.ac.uk/collection/L06/current/94/> <http://vocab.nerc.ac.uk/collection/L06/current/95/> <http://vocab.nerc.ac.uk/collection/L06/current/96/> <http://vocab.nerc.ac.uk/collection/L06/current/97/> <http://vocab.nerc.ac.uk/collection/L06/current/98/> <http://vocab.nerc.ac.uk/collection/L06/current/99/> <http://vocab.nerc.ac.uk/collection/L06/current/9A/> <http://vocab.nerc.ac.uk/collection/L06/current/9B/> ) ] ;
+    sh:property [ sh:path schema:owner ; sh:name "Owner"@en ; sh:order 6 ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
+    sh:property [ sh:path dcterms:created ; sh:name "Asset creation date"@en ; sh:order 7 ; sh:maxCount 1 ; sh:or ( [ sh:datatype xsd:gYear ] [ sh:datatype xsd:gYearMonth ] [ sh:datatype xsd:date ] [ sh:datatype xsd:dateTime ] ) ] ;
+    # Custodian is chosen to represent the operational and management duties in CNR-ISMAR Provision 42/2026.
+    # PROV-O/DCAT qualified attribution records the site reference person and role.
+    sh:property [
+        sh:path prov:qualifiedAttribution ; sh:name "Site reference person"@en ; sh:description "At least one site reference person, entered as a name string on the attributed agent."@en ; sh:order 8 ; sh:minCount 1 ; sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [ sh:path rdf:type ; sh:hasValue prov:Attribution ] ;
+            sh:property [ sh:path prov:agent ; sh:name "Site reference person"@en ; sh:minCount 1 ; sh:nodeKind sh:BlankNodeOrIRI ; sh:node [ sh:property [ sh:path foaf:name ; sh:name "Site reference person name"@en ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:minLength 1 ] ] ] ;
+            sh:property [ sh:path dcat:hadRole ; sh:name "Responsibility role"@en ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:hasValue <https://schemas.isotc211.org/resources/codelists/codelists.xml#ISO19115-1.1.cit.CI_RoleCode_custodian> ]
+        ]
+    ] ;
+    sh:property [ sh:path dcterms:spatial ; sh:name "Spatial location"@en ; sh:description "An optional geographic feature identified by an IRI in the locations registry namespace. Feature type information must be available in the validation data graph."@en ; sh:order 9 ; sh:nodeKind sh:IRI ; sh:class geo:Feature ; sh:pattern "^https://w3id[.]org/cnr-ismar/locations-registry/" ; sh:message "Each spatial value must be an IRI in the https://w3id.org/cnr-ismar/locations-registry/ namespace and identify a geo:Feature in the validation data graph."@en ] .
