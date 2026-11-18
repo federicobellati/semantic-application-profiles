@@ -1,1 +1,1711 @@
+# Sensor model SHACL profile — local draft, 2026-11-16.
+# Field sequence follows SBE37-SMP-ODO.ttl and the agreed document/model split.
+# sh:order preserves that sequence for form renderers; RDF graphs are unordered.
+# Requires SHACL Core + SHACL-SPARQL. No automatic data generation in SHACL.
+# Validate asserted records WITHOUT ontology imports or entailment first.
+# Apply sensorDescriptionMapping inference separately after validation.
+# Closed record/block shapes reject additional predicates and unknown named blocks.
+# Vocabulary checks inspect IRI prefixes only, with no network requests.
+# No default sensor-specific measurements or observation type are prescribed.
 
+@prefix sapsens: <https://w3id.org/cnr-ismar/sap/sensor/1.0.0/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix schema: <http://schema.org/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix adms: <http://www.w3.org/ns/adms#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix omtype: <http://www.opengis.net/def/observationType/OGC-OM/2.0/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+sapsens:profile.ttl
+    a owl:Ontology ;
+    dcterms:title "Sensor model application profile — SHACL"@en ;
+    dcterms:description "Bozza locale del profilo concordato. SHACL Core e SHACL-SPARQL; validare il grafo asserito prima delle inferenze. Nessun generatore HTML incluso."@it ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator <https://orcid.org/0009-0000-9657-919X> ;
+    dcterms:created "2026-11-16"^^xsd:date ;
+    owl:versionInfo "1.0.0" ;
+    rdfs:seeAlso <https://w3c.github.io/sdw-sosa-ssn/ssn/> .
+
+sapsens:MetadataDocumentShape
+    a sh:NodeShape ;
+    sh:name "Metadata document"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:IRI ;
+    sh:targetClass owl:Ontology ;
+    sh:targetSubjectsOf dcterms:conformsTo, owl:imports ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/sensors-models-registry/[A-Za-z][A-Za-z0-9_-]*[.]ttl$" ;
+    sh:property sapsens:DocumentTypes, sapsens:DocumentRequiredType1, sapsens:DocumentImports, sapsens:DocumentLicense, sapsens:DocumentRights, sapsens:DocumentAccessRights, sapsens:DocumentCreator, sapsens:DocumentPublisher, sapsens:DocumentVersion, sapsens:DocumentCreated, sapsens:DocumentModified, sapsens:DocumentConformsTo, sapsens:DocumentSeeAlso, sapsens:DocumentContact ;
+    sh:sparql [
+        sh:message "Il documento deve descrivere il modello la cui IRI è ottenuta togliendo il suffisso .ttl."@it ;
+        sh:select """SELECT $this WHERE {
+  BIND(IRI(SUBSTR(STR($this), 1, STRLEN(STR($this)) - 4)) AS ?model)
+  FILTER NOT EXISTS { ?model a <http://schema.org/ProductModel> }
+}"""
+    ] .
+
+sapsens:DocumentTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( owl:Ontology ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:DocumentRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue owl:Ontology .
+
+sapsens:DocumentImports
+    a sh:PropertyShape ;
+    sh:path owl:imports ;
+    sh:order "0.1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://w3id.org/cnr-ismar/ontology/sensorDescriptionMapping/1.0.0/> ;
+    sh:description "Import fisso e automatico del mapping. L’applicazione delle inferenze dipende dal consumatore."@it .
+
+sapsens:DocumentLicense
+    a sh:PropertyShape ;
+    sh:path dcterms:license ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://creativecommons.org/licenses/by/4.0/> .
+
+sapsens:DocumentRights
+    a sh:PropertyShape ;
+    sh:path dcterms:rights ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:hasValue "The licence (dcterms:license) applies to this metadata record only; it does not cover the physical instrument."@en ;
+    sh:languageIn ( "en" ) .
+
+sapsens:DocumentAccessRights
+    a sh:PropertyShape ;
+    sh:path dcterms:accessRights ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <http://publications.europa.eu/resource/authority/access-right/PUBLIC> .
+
+sapsens:DocumentCreator
+    a sh:PropertyShape ;
+    sh:path dcterms:creator ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://orcid.org/0009-0000-9657-919X> .
+
+sapsens:DocumentPublisher
+    a sh:PropertyShape ;
+    sh:path dcterms:publisher ;
+    sh:order "5"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:PublisherShape .
+
+sapsens:DocumentVersion
+    a sh:PropertyShape ;
+    sh:path dcat:version ;
+    sh:order "6"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string .
+
+sapsens:DocumentCreated
+    a sh:PropertyShape ;
+    sh:path dcterms:created ;
+    sh:order "7"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:dateTime ;
+    sh:description "Compilabile. Il modulo suggerisce data e ora correnti solo se il campo è vuoto; SHACL non genera la data."@it .
+
+sapsens:DocumentModified
+    a sh:PropertyShape ;
+    sh:path dcterms:modified ;
+    sh:order "8"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:dateTime .
+
+sapsens:DocumentConformsTo
+    a sh:PropertyShape ;
+    sh:path dcterms:conformsTo ;
+    sh:order "9"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://w3id.org/cnr-ismar/sap/sensor/1.0.0/> .
+
+sapsens:DocumentSeeAlso
+    a sh:PropertyShape ;
+    sh:path rdfs:seeAlso ;
+    sh:order "9.1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue sapsens:profile.ttl ;
+    sh:description "Collegamento fisso al file SHACL, aggiunto rispetto all’esempio sorgente."@it .
+
+sapsens:DocumentContact
+    a sh:PropertyShape ;
+    sh:path dcat:contactPoint ;
+    sh:order "27"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ContactShape .
+
+sapsens:SensorModelShape
+    a sh:NodeShape ;
+    sh:name "Sensor model"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:IRI ;
+    sh:targetClass schema:ProductModel ;
+    sh:targetSubjectsOf sosa:hasSubSystem, schema:model ;
+    sh:pattern "^https://w3id[.]org/cnr-ismar/sensors-models-registry/[A-Za-z][A-Za-z0-9_-]*$" ;
+    sh:property sapsens:ModelTypes, sapsens:ModelRequiredType1, sapsens:ModelRequiredType2, sapsens:ModelRequiredType3, sapsens:ModelManufacturer, sapsens:ModelModel, sapsens:ModelMPN, sapsens:ModelCategory, sapsens:ModelCategoryRecommended, sapsens:ModelLegacyType, sapsens:ModelTitle, sapsens:ModelIdentifier, sapsens:ModelAlternativeIdentifier, sapsens:ModelComment, sapsens:ModelCommentRecommended, sapsens:ModelURL, sapsens:ModelImage, sapsens:ModelReferences, sapsens:ModelMaterial, sapsens:ModelWidth, sapsens:ModelHeight, sapsens:ModelWeight, sapsens:ModelAdditionalValues, sapsens:ModelAdditionalDeviceTypeCount, sapsens:ModelAdditionalTemporaryStorageCount, sapsens:ModelAdditionalDataTypeCount, sapsens:ModelAdditionalOutputDataFormatCount, sapsens:ModelAdditionalLengthCount, sapsens:ModelAdditionalDiameterCount, sapsens:ModelAdditionalElectricalCurrentTypeCount, sapsens:ModelAdditionalInputPowerRangeCount, sapsens:ModelAdditionalOperatingTemperatureCount, sapsens:ModelAdditionalStandardsCount, sapsens:ModelAdditionalSafetyNormCount, sapsens:ModelAdditionalIPCodeCount, sapsens:ModelSubsystems ;
+    sh:sparql [
+        sh:message "Manca il documento amministrativo con IRI del modello più .ttl."@it ;
+        sh:select """SELECT $this WHERE {
+  FILTER NOT EXISTS {
+    ?doc <http://purl.org/dc/terms/conformsTo> <https://w3id.org/cnr-ismar/sap/sensor/1.0.0/> .
+    FILTER(STR(?doc) = CONCAT(STR($this), ".ttl"))
+  }
+}"""
+    ], [
+        sh:message "Ogni componente deve dichiarare esplicitamente questo modello come padre."@it ;
+        sh:select """SELECT $this ?value WHERE {
+  $this <http://www.w3.org/ns/sosa/hasSubSystem> ?value .
+  FILTER NOT EXISTS { ?value <http://www.w3.org/ns/sosa/isSubSystemOf> $this }
+}"""
+    ] .
+
+sapsens:ModelTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "3"^^xsd:integer ;
+    sh:maxCount "3"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( sosa:System schema:ProductModel prov:Entity ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ModelRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue sosa:System .
+
+sapsens:ModelRequiredType2
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:ProductModel .
+
+sapsens:ModelRequiredType3
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue prov:Entity .
+
+sapsens:ModelManufacturer
+    a sh:PropertyShape ;
+    sh:path schema:manufacturer ;
+    sh:order "10"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:StringOrIRIShape ;
+    sh:description "Stringa oppure IRI. Suggerimento: https://vocab.nerc.ac.uk/collection/L35/current/ ."@it .
+
+sapsens:ModelModel
+    a sh:PropertyShape ;
+    sh:path schema:model ;
+    sh:order "11"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string .
+
+sapsens:ModelMPN
+    a sh:PropertyShape ;
+    sh:path schema:mpn ;
+    sh:order "12"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string .
+
+sapsens:ModelCategory
+    a sh:PropertyShape ;
+    sh:path schema:category ;
+    sh:order "13"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:description "Incollare l’IRI del concetto GCMD. Navigazione: https://gcmd.earthdata.nasa.gov/KeywordViewer/ . Controllo del prefisso, senza verifica remota."@it ;
+    sh:pattern "^https?://gcmd[.]earthdata[.]nasa[.]gov/kms/concept/.+" .
+
+sapsens:ModelCategoryRecommended
+    a sh:PropertyShape ;
+    sh:path schema:category ;
+    sh:order "13"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:description "È raccomandata una categoria GCMD."@it ;
+    sh:severity sh:Warning ;
+    sh:message "È raccomandata una categoria GCMD."@it .
+
+sapsens:ModelLegacyType
+    a sh:PropertyShape ;
+    sh:path dcterms:type ;
+    sh:order "14"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:description "Solo NERC P10: https://vocab.nerc.ac.uk/collection/P10/current/ . Collezione storica non più mantenuta; campo facoltativo conservato per scelta del profilo."@it ;
+    sh:pattern "^https?://vocab[.]nerc[.]ac[.]uk/collection/P10/.+" .
+
+sapsens:ModelTitle
+    a sh:PropertyShape ;
+    sh:path dcterms:title ;
+    sh:order "15"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:languageIn ( "und" ) ;
+    sh:maxLength "35"^^xsd:integer .
+
+sapsens:ModelIdentifier
+    a sh:PropertyShape ;
+    sh:path dcterms:identifier ;
+    sh:order "16"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "UUIDv4 semplice generato automaticamente alla creazione e conservato nelle revisioni; senza prefisso urn:uuid:."@it ;
+    sh:pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" .
+
+sapsens:ModelAlternativeIdentifier
+    a sh:PropertyShape ;
+    sh:path adms:identifier ;
+    sh:order "17"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:AlternativeIdentifierShape .
+
+sapsens:ModelComment
+    a sh:PropertyShape ;
+    sh:path rdfs:comment ;
+    sh:order "18"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:languageIn ( "en" ) .
+
+sapsens:ModelCommentRecommended
+    a sh:PropertyShape ;
+    sh:path rdfs:comment ;
+    sh:order "18"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:description "È raccomandata una descrizione in inglese."@it ;
+    sh:severity sh:Warning ;
+    sh:message "È raccomandata una descrizione in inglese."@it .
+
+sapsens:ModelURL
+    a sh:PropertyShape ;
+    sh:path schema:url ;
+    sh:order "19"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https?://[^/?#\\s]+[^\\s]*$" .
+
+sapsens:ModelImage
+    a sh:PropertyShape ;
+    sh:path schema:image ;
+    sh:order "20"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https?://[^/?#\\s]+[^\\s]*$" .
+
+sapsens:ModelReferences
+    a sh:PropertyShape ;
+    sh:path dcterms:references ;
+    sh:order "21"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https?://[^/?#\\s]+[^\\s]*$" .
+
+sapsens:ModelMaterial
+    a sh:PropertyShape ;
+    sh:path schema:material ;
+    sh:order "22"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:languageIn ( "en" ) .
+
+sapsens:ModelWidth
+    a sh:PropertyShape ;
+    sh:path schema:width ;
+    sh:order "23"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:PositiveQuantityShape .
+
+sapsens:ModelHeight
+    a sh:PropertyShape ;
+    sh:path schema:height ;
+    sh:order "24"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:PositiveQuantityShape .
+
+sapsens:ModelWeight
+    a sh:PropertyShape ;
+    sh:path schema:weight ;
+    sh:order "25"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:PositiveQuantityShape .
+
+sapsens:ModelAdditionalValues
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26"^^xsd:decimal ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:description "Sono ammessi soltanto i blocchi elencati, al massimo uno per ciascun schema:name; nessun massimo 1 globale sul collegamento."@it ;
+    sh:or ( sapsens:DeviceTypeShape sapsens:TemporaryStorageShape sapsens:DataTypeShape sapsens:OutputDataFormatShape sapsens:LengthShape sapsens:DiameterShape sapsens:ElectricalCurrentTypeShape sapsens:InputPowerRangeShape sapsens:OperatingTemperatureShape sapsens:StandardsShape sapsens:SafetyNormShape sapsens:IPCodeShape ) .
+
+sapsens:ModelAdditionalDeviceTypeCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.01"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "deviceType"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer ;
+    sh:qualifiedMinCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalTemporaryStorageCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.02"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "temporaryStorage"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalDataTypeCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.03"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "dataType"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalOutputDataFormatCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.04"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "outputDataFormat"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalLengthCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.05"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "length"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalDiameterCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.06"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "diameter"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalElectricalCurrentTypeCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.07"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "electricalCurrentType"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalInputPowerRangeCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.08"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "inputPowerRange"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalOperatingTemperatureCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.09"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "operatingTemperature"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalStandardsCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.1"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "standards"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalSafetyNormCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.11"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "safety_norm"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelAdditionalIPCodeCount
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "26.12"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "ipCode"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ModelSubsystems
+    a sh:PropertyShape ;
+    sh:path sosa:hasSubSystem ;
+    sh:order "28"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:node sapsens:SensorComponentShape ;
+    sh:description "Almeno un componente sensore; nessun massimo. Ogni componente è descritto nella stessa scheda."@it .
+
+sapsens:PublisherShape
+    a sh:NodeShape ;
+    sh:name "Publisher"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:PublisherTypes, sapsens:PublisherRequiredType1, sapsens:PublisherRequiredType2, sapsens:PublisherRequiredType3, sapsens:PublisherName, sapsens:PublisherSameAs .
+
+sapsens:PublisherTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "3"^^xsd:integer ;
+    sh:maxCount "3"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( prov:Agent prov:Organization foaf:Organization ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:PublisherRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue prov:Agent .
+
+sapsens:PublisherRequiredType2
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue prov:Organization .
+
+sapsens:PublisherRequiredType3
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue foaf:Organization .
+
+sapsens:PublisherName
+    a sh:PropertyShape ;
+    sh:path foaf:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "Istituto di Scienze Marine del Consiglio Nazionale delle Ricerche" .
+
+sapsens:PublisherSameAs
+    a sh:PropertyShape ;
+    sh:path owl:sameAs ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://ror.org/02hdf6119> .
+
+sapsens:AlternativeIdentifierShape
+    a sh:NodeShape ;
+    sh:name "Alternative identifier"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:AlternativeIdentifierTypes, sapsens:AlternativeIdentifierRequiredType1, sapsens:AlternativeNotation .
+
+sapsens:AlternativeIdentifierTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( adms:Identifier ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:AlternativeIdentifierRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue adms:Identifier .
+
+sapsens:AlternativeNotation
+    a sh:PropertyShape ;
+    sh:path skos:notation ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "Stringa libera manuale; nessun campo interno dcterms:type."@it ;
+    sh:minLength "1"^^xsd:integer ;
+    sh:maxLength "35"^^xsd:integer .
+
+sapsens:PositiveQuantityShape
+    a sh:NodeShape ;
+    sh:name "Positive dimension or weight"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:QuantityTypes, sapsens:QuantityRequiredType1, sapsens:QuantityValue, sapsens:QuantityUnit .
+
+sapsens:QuantityTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:QuantitativeValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:QuantityRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:QuantitativeValue .
+
+sapsens:QuantityValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:minExclusive "0"^^xsd:integer .
+
+sapsens:QuantityUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:TextOrHttpIRIShape ;
+    sh:description "Stringa libera oppure IRI HTTP(S); nessun obbligo di vocabolario controllato."@it .
+
+sapsens:DeviceTypeShape
+    a sh:NodeShape ;
+    sh:name "deviceType"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:DeviceTypeTypes, sapsens:DeviceTypeRequiredType1, sapsens:DeviceTypeName, sapsens:DeviceTypeValue .
+
+sapsens:DeviceTypeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:DeviceTypeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:DeviceTypeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "deviceType" .
+
+sapsens:DeviceTypeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:in ( "physical" "virtual" ) .
+
+sapsens:TemporaryStorageShape
+    a sh:NodeShape ;
+    sh:name "temporaryStorage"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:TemporaryStorageTypes, sapsens:TemporaryStorageRequiredType1, sapsens:TemporaryStorageName, sapsens:TemporaryStorageValue .
+
+sapsens:TemporaryStorageTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:TemporaryStorageRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:TemporaryStorageName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "temporaryStorage" .
+
+sapsens:TemporaryStorageValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:boolean ;
+    sh:description "Scelta Sì/No esportata come true/false; blocco assente diverso da false."@it .
+
+sapsens:DataTypeShape
+    a sh:NodeShape ;
+    sh:name "dataType"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:DataTypeTypes, sapsens:DataTypeRequiredType1, sapsens:DataTypeName, sapsens:DataTypeValue .
+
+sapsens:DataTypeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:DataTypeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:DataTypeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "dataType" .
+
+sapsens:DataTypeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:in ( "instantaneous" "cumulative" "various" ) .
+
+sapsens:OutputDataFormatShape
+    a sh:NodeShape ;
+    sh:name "outputDataFormat"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:OutputDataFormatTypes, sapsens:OutputDataFormatRequiredType1, sapsens:OutputDataFormatName, sapsens:OutputDataFormatValue .
+
+sapsens:OutputDataFormatTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:OutputDataFormatRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:OutputDataFormatName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "outputDataFormat" .
+
+sapsens:OutputDataFormatValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:in ( "binary" "ascii" "json" "csv" "text" "xml" ) .
+
+sapsens:LengthShape
+    a sh:NodeShape ;
+    sh:name "length"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:LengthTypes, sapsens:LengthRequiredType1, sapsens:LengthName, sapsens:LengthValue, sapsens:LengthUnit .
+
+sapsens:LengthTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:LengthRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:LengthName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "length" .
+
+sapsens:LengthValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:minExclusive "0"^^xsd:integer .
+
+sapsens:LengthUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:TextOrHttpIRIShape .
+
+sapsens:DiameterShape
+    a sh:NodeShape ;
+    sh:name "diameter"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:DiameterTypes, sapsens:DiameterRequiredType1, sapsens:DiameterName, sapsens:DiameterValue, sapsens:DiameterUnit .
+
+sapsens:DiameterTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:DiameterRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:DiameterName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "diameter" .
+
+sapsens:DiameterValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:minExclusive "0"^^xsd:integer .
+
+sapsens:DiameterUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:TextOrHttpIRIShape .
+
+sapsens:ElectricalCurrentTypeShape
+    a sh:NodeShape ;
+    sh:name "electricalCurrentType"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:ElectricalCurrentTypeTypes, sapsens:ElectricalCurrentTypeRequiredType1, sapsens:ElectricalCurrentTypeName, sapsens:ElectricalCurrentTypeValue .
+
+sapsens:ElectricalCurrentTypeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ElectricalCurrentTypeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:ElectricalCurrentTypeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "electricalCurrentType" .
+
+sapsens:ElectricalCurrentTypeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:in ( "AC" "DC" ) .
+
+sapsens:InputPowerRangeShape
+    a sh:NodeShape ;
+    sh:name "inputPowerRange"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:InputPowerRangeTypes, sapsens:InputPowerRangeRequiredType1, sapsens:InputPowerRangeName, sapsens:InputPowerRangePropertyID, sapsens:InputPowerRangeValue .
+
+sapsens:InputPowerRangeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:InputPowerRangeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:InputPowerRangeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "inputPowerRange" .
+
+sapsens:InputPowerRangePropertyID
+    a sh:PropertyShape ;
+    sh:path schema:propertyID ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:hasValue <https://vocab.nerc.ac.uk/collection/W05/current/CHAR0008/> .
+
+sapsens:InputPowerRangeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "Esempio di formato: 12-20 VDC."@it ;
+    sh:minLength "1"^^xsd:integer .
+
+sapsens:OperatingTemperatureShape
+    a sh:NodeShape ;
+    sh:name "operatingTemperature"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:OperatingTemperatureTypes, sapsens:OperatingTemperatureRequiredType1, sapsens:OperatingTemperatureName, sapsens:OperatingTemperatureMinimum, sapsens:OperatingTemperatureMaximum, sapsens:OperatingTemperatureUnit .
+
+sapsens:OperatingTemperatureTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:OperatingTemperatureRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:OperatingTemperatureName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "operatingTemperature" .
+
+sapsens:OperatingTemperatureMinimum
+    a sh:PropertyShape ;
+    sh:path schema:minValue ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:lessThanOrEquals schema:maxValue .
+
+sapsens:OperatingTemperatureMaximum
+    a sh:PropertyShape ;
+    sh:path schema:maxValue ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape .
+
+sapsens:OperatingTemperatureUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:TextOrHttpIRIShape .
+
+sapsens:StandardsShape
+    a sh:NodeShape ;
+    sh:name "standards"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:StandardsTypes, sapsens:StandardsRequiredType1, sapsens:StandardsName, sapsens:StandardsValue .
+
+sapsens:StandardsTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:StandardsRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:StandardsName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "standards" .
+
+sapsens:StandardsValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "Esempio di formato tratto dalla scheda: EN 61326-1:2006 Class A; EN 55011:2007 Group 1, Class A. Non è un valore predefinito né una raccomandazione di norme attuali."@it ;
+    sh:minLength "1"^^xsd:integer .
+
+sapsens:SafetyNormShape
+    a sh:NodeShape ;
+    sh:name "safety_norm"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:SafetyNormTypes, sapsens:SafetyNormRequiredType1, sapsens:SafetyNormName, sapsens:SafetyNormValue .
+
+sapsens:SafetyNormTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:SafetyNormRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:SafetyNormName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "safety_norm" .
+
+sapsens:SafetyNormValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "Esempio di formato: EN 61010-1:2001. Non è un valore predefinito."@it ;
+    sh:minLength "1"^^xsd:integer .
+
+sapsens:IPCodeShape
+    a sh:NodeShape ;
+    sh:name "ipCode"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:IPCodeTypes, sapsens:IPCodeRequiredType1, sapsens:IPCodeName, sapsens:IPCodeValue .
+
+sapsens:IPCodeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:IPCodeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:IPCodeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "ipCode" .
+
+sapsens:IPCodeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:description "Esempio di formato: IP65. Nessun grado di protezione preimpostato."@it ;
+    sh:minLength "1"^^xsd:integer .
+
+sapsens:ContactShape
+    a sh:NodeShape ;
+    sh:name "Contact point"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:ContactTypes, sapsens:ContactRequiredType1, sapsens:ContactName, sapsens:ContactEmail .
+
+sapsens:ContactTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( vcard:Individual ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ContactRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue vcard:Individual .
+
+sapsens:ContactName
+    a sh:PropertyShape ;
+    sh:path vcard:fn ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string .
+
+sapsens:ContactEmail
+    a sh:PropertyShape ;
+    sh:path vcard:hasEmail ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:description "Indirizzo email manuale esportato come IRI mailto:. Controllo sintattico, senza verifica della casella."@it ;
+    sh:pattern "^mailto:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+([.][A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?([.][A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$" .
+
+sapsens:SensorComponentShape
+    a sh:NodeShape ;
+    sh:name "Sensing component"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:IRI ;
+    sh:targetClass sosa:Sensor ;
+    sh:targetObjectsOf sosa:hasSubSystem ;
+    sh:targetSubjectsOf sosa:isSubSystemOf ;
+    sh:property sapsens:ComponentTypes, sapsens:ComponentRequiredType1, sapsens:ComponentLabel, sapsens:ComponentComment, sapsens:ComponentIdentifier, sapsens:ComponentObserves, sapsens:ComponentParent, sapsens:ComponentUnit, sapsens:ComponentObservationType, sapsens:ComponentMetrologyValues, sapsens:ComponentMetrologyAccuracyCount, sapsens:ComponentMetrologyResolutionCount, sapsens:ComponentMetrologyMeasurementRangeCount ;
+    sh:sparql [
+        sh:message "Il componente deve essere collegato dal padre tramite sosa:hasSubSystem."@it ;
+        sh:select """SELECT $this WHERE {
+  $this <http://www.w3.org/ns/sosa/isSubSystemOf> ?parent .
+  FILTER NOT EXISTS { ?parent <http://www.w3.org/ns/sosa/hasSubSystem> $this }
+}"""
+    ], [
+        sh:message "IRI del componente non coerente con IRI del padre, trattino e codice locale alfabetico iniziale."@it ;
+        sh:select """SELECT $this WHERE {
+  $this <http://www.w3.org/ns/sosa/isSubSystemOf> ?parent .
+  FILTER(!STRSTARTS(STR($this), CONCAT(STR(?parent), "-")) ||
+    !REGEX(SUBSTR(STR($this), STRLEN(STR(?parent)) + 2), "^[A-Za-z][A-Za-z0-9_-]*$"))
+}"""
+    ] .
+
+sapsens:ComponentTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( sosa:Sensor ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ComponentRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue sosa:Sensor .
+
+sapsens:ComponentLabel
+    a sh:PropertyShape ;
+    sh:path rdfs:label ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:languageIn ( "en" ) .
+
+sapsens:ComponentComment
+    a sh:PropertyShape ;
+    sh:path rdfs:comment ;
+    sh:order "2"^^xsd:decimal ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:languageIn ( "en" ) .
+
+sapsens:ComponentIdentifier
+    a sh:PropertyShape ;
+    sh:path dcterms:identifier ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string .
+
+sapsens:ComponentObserves
+    a sh:PropertyShape ;
+    sh:path sosa:observes ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:description "IRI manuale da qualsiasi vocabolario NERC, inclusi /collection/ e /standard_name/. Solo controllo del prefisso http(s)://vocab.nerc.ac.uk/; nessuna verifica remota."@it ;
+    sh:pattern "^https?://vocab[.]nerc[.]ac[.]uk/.+" .
+
+sapsens:ComponentParent
+    a sh:PropertyShape ;
+    sh:path sosa:isSubSystemOf ;
+    sh:order "5"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:description "IRI del modello padre, generata automaticamente e dichiarata esplicitamente."@it .
+
+sapsens:ComponentUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "6"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ScientificUnitShape ;
+    sh:description "Incollare l’IRI dell’unità da https://qudt.org/doc/DOC_VOCAB-UNITS.html oppure https://vocab.nerc.ac.uk/collection/P06/current/ . Solo controllo del prefisso, senza verifica del termine nel catalogo."@it .
+
+sapsens:ComponentObservationType
+    a sh:PropertyShape ;
+    sh:path schema:additionalProperty ;
+    sh:order "7"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ObservationTypeShape .
+
+sapsens:ComponentMetrologyValues
+    a sh:PropertyShape ;
+    sh:path sosa:hasProperty ;
+    sh:order "8"^^xsd:decimal ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:description "Sono ammessi soltanto i blocchi elencati, al massimo uno per ciascun schema:name; nessun massimo 1 globale sul collegamento."@it ;
+    sh:or ( sapsens:AccuracyShape sapsens:ResolutionShape sapsens:MeasurementRangeShape ) .
+
+sapsens:ComponentMetrologyAccuracyCount
+    a sh:PropertyShape ;
+    sh:path sosa:hasProperty ;
+    sh:order "8.01"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "accuracy"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ComponentMetrologyResolutionCount
+    a sh:PropertyShape ;
+    sh:path sosa:hasProperty ;
+    sh:order "8.02"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "resolution"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ComponentMetrologyMeasurementRangeCount
+    a sh:PropertyShape ;
+    sh:path sosa:hasProperty ;
+    sh:order "8.03"^^xsd:decimal ;
+    sh:qualifiedValueShape [
+        sh:property [
+            sh:path schema:name ;
+            sh:hasValue "measurement range"
+        ]
+    ] ;
+    sh:qualifiedMaxCount "1"^^xsd:integer .
+
+sapsens:ObservationTypeShape
+    a sh:NodeShape ;
+    sh:name "Observation type"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:ObservationTypeTypes, sapsens:ObservationTypeRequiredType1, sapsens:ObservationTypeName, sapsens:ObservationTypeValue .
+
+sapsens:ObservationTypeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ObservationTypeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:ObservationTypeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "observationType" .
+
+sapsens:ObservationTypeValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( omtype:OM_Measurement omtype:OM_CountObservation omtype:OM_CategoryObservation omtype:OM_TruthObservation omtype:OM_Observation ) ;
+    sh:description "Menu con le cinque IRI OGC concordate. L’unità del componente resta obbligatoria per tutti i tipi."@it .
+
+sapsens:AccuracyShape
+    a sh:NodeShape ;
+    sh:name "accuracy"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:AccuracyTypes, sapsens:AccuracyRequiredType1, sapsens:AccuracyRequiredType2, sapsens:AccuracyLabel, sapsens:AccuracyName, sapsens:AccuracyValue, sapsens:AccuracyUnit .
+
+sapsens:AccuracyTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "2"^^xsd:integer ;
+    sh:maxCount "2"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( sosa:Property schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:AccuracyRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue sosa:Property .
+
+sapsens:AccuracyRequiredType2
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:AccuracyLabel
+    a sh:PropertyShape ;
+    sh:path rdfs:label ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:hasValue "Accuracy"@en ;
+    sh:languageIn ( "en" ) .
+
+sapsens:AccuracyName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "accuracy" .
+
+sapsens:AccuracyValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape .
+
+sapsens:AccuracyUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ScientificUnitShape ;
+    sh:description "Incollare l’IRI dell’unità da https://qudt.org/doc/DOC_VOCAB-UNITS.html oppure https://vocab.nerc.ac.uk/collection/P06/current/ . Solo controllo del prefisso, senza verifica del termine nel catalogo."@it .
+
+sapsens:ResolutionShape
+    a sh:NodeShape ;
+    sh:name "resolution"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:ResolutionTypes, sapsens:ResolutionRequiredType1, sapsens:ResolutionRequiredType2, sapsens:ResolutionLabel, sapsens:ResolutionName, sapsens:ResolutionValue, sapsens:ResolutionUnit .
+
+sapsens:ResolutionTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "2"^^xsd:integer ;
+    sh:maxCount "2"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( sosa:Property schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:ResolutionRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue sosa:Property .
+
+sapsens:ResolutionRequiredType2
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:ResolutionLabel
+    a sh:PropertyShape ;
+    sh:path rdfs:label ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:hasValue "Resolution"@en ;
+    sh:languageIn ( "en" ) .
+
+sapsens:ResolutionName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "resolution" .
+
+sapsens:ResolutionValue
+    a sh:PropertyShape ;
+    sh:path schema:value ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:minExclusive "0"^^xsd:integer .
+
+sapsens:ResolutionUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ScientificUnitShape ;
+    sh:description "Incollare l’IRI dell’unità da https://qudt.org/doc/DOC_VOCAB-UNITS.html oppure https://vocab.nerc.ac.uk/collection/P06/current/ . Solo controllo del prefisso, senza verifica del termine nel catalogo."@it .
+
+sapsens:MeasurementRangeShape
+    a sh:NodeShape ;
+    sh:name "measurement range"@en ;
+    sh:closed "true"^^xsd:boolean ;
+    sh:nodeKind sh:BlankNodeOrIRI ;
+    sh:property sapsens:MeasurementRangeTypes, sapsens:MeasurementRangeRequiredType1, sapsens:MeasurementRangeRequiredType2, sapsens:MeasurementRangeLabel, sapsens:MeasurementRangeName, sapsens:MeasurementRangeMinimum, sapsens:MeasurementRangeMaximum, sapsens:MeasurementRangeUnit .
+
+sapsens:MeasurementRangeTypes
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:minCount "2"^^xsd:integer ;
+    sh:maxCount "2"^^xsd:integer ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( sosa:Property schema:PropertyValue ) ;
+    sh:description "Tipo/i fisso/i e automatico/i; nessuna scelta nel modulo."@it .
+
+sapsens:MeasurementRangeRequiredType1
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue sosa:Property .
+
+sapsens:MeasurementRangeRequiredType2
+    a sh:PropertyShape ;
+    sh:path rdf:type ;
+    sh:order "0"^^xsd:decimal ;
+    sh:hasValue schema:PropertyValue .
+
+sapsens:MeasurementRangeLabel
+    a sh:PropertyShape ;
+    sh:path rdfs:label ;
+    sh:order "1"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype rdf:langString ;
+    sh:hasValue "Measurement range"@en ;
+    sh:languageIn ( "en" ) .
+
+sapsens:MeasurementRangeName
+    a sh:PropertyShape ;
+    sh:path schema:name ;
+    sh:order "2"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:datatype xsd:string ;
+    sh:hasValue "measurement range" .
+
+sapsens:MeasurementRangeMinimum
+    a sh:PropertyShape ;
+    sh:path schema:minValue ;
+    sh:order "3"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape ;
+    sh:lessThanOrEquals schema:maxValue .
+
+sapsens:MeasurementRangeMaximum
+    a sh:PropertyShape ;
+    sh:path schema:maxValue ;
+    sh:order "4"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:NumberShape .
+
+sapsens:MeasurementRangeUnit
+    a sh:PropertyShape ;
+    sh:path schema:unitCode ;
+    sh:order "5"^^xsd:decimal ;
+    sh:minCount "1"^^xsd:integer ;
+    sh:maxCount "1"^^xsd:integer ;
+    sh:node sapsens:ScientificUnitShape ;
+    sh:description "Incollare l’IRI dell’unità da https://qudt.org/doc/DOC_VOCAB-UNITS.html oppure https://vocab.nerc.ac.uk/collection/P06/current/ . Solo controllo del prefisso, senza verifica del termine nel catalogo."@it .
+
+sapsens:NumberShape
+    a sh:NodeShape ;
+    sh:name "RDF numeric literal"@en ;
+    sh:nodeKind sh:Literal ;
+    sh:or ( [
+            sh:datatype xsd:decimal
+        ] [
+            sh:datatype xsd:integer
+        ] [
+            sh:datatype xsd:double
+        ] [
+            sh:datatype xsd:float
+        ] [
+            sh:datatype xsd:nonPositiveInteger
+        ] [
+            sh:datatype xsd:negativeInteger
+        ] [
+            sh:datatype xsd:long
+        ] [
+            sh:datatype xsd:int
+        ] [
+            sh:datatype xsd:short
+        ] [
+            sh:datatype xsd:byte
+        ] [
+            sh:datatype xsd:nonNegativeInteger
+        ] [
+            sh:datatype xsd:unsignedLong
+        ] [
+            sh:datatype xsd:unsignedInt
+        ] [
+            sh:datatype xsd:unsignedShort
+        ] [
+            sh:datatype xsd:unsignedByte
+        ] [
+            sh:datatype xsd:positiveInteger
+        ] ) .
+
+sapsens:StringOrIRIShape
+    a sh:NodeShape ;
+    sh:name "Plain string or IRI"@en ;
+    sh:or ( [
+            sh:datatype xsd:string
+        ] [
+            sh:nodeKind sh:IRI
+        ] ) .
+
+sapsens:TextOrHttpIRIShape
+    a sh:NodeShape ;
+    sh:name "Plain string or HTTP(S) IRI"@en ;
+    sh:or ( [
+            sh:datatype xsd:string
+        ] [
+            sh:nodeKind sh:IRI ;
+            sh:pattern "^https?://[^/?#\\s]+[^\\s]*$"
+        ] ) .
+
+sapsens:ScientificUnitShape
+    a sh:NodeShape ;
+    sh:name "QUDT or NERC P06 unit IRI"@en ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^https?://(qudt[.]org/vocab/unit/|vocab[.]nerc[.]ac[.]uk/collection/P06/).+" ;
+    sh:description "Incollare l’IRI dell’unità da https://qudt.org/doc/DOC_VOCAB-UNITS.html oppure https://vocab.nerc.ac.uk/collection/P06/current/ . Solo controllo del prefisso, senza verifica del termine nel catalogo."@it .
+
+sapsens:RecordGraphShape
+    a sh:NodeShape ;
+    sh:name "Record graph presence"@en ;
+    sh:targetNode sapsens:profile.ttl ;
+    sh:sparql [
+        sh:message "Il grafo deve contenere almeno un modello schema:ProductModel."@it ;
+        sh:select """SELECT $this WHERE {
+  FILTER NOT EXISTS { ?model a <http://schema.org/ProductModel> }
+}"""
+    ] .
